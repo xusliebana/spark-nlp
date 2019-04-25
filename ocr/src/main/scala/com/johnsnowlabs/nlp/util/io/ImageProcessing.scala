@@ -8,9 +8,7 @@ import java.awt.{Color, Image}
 
 trait ImageProcessing {
 
-  /*
-   *  based on http://users.iit.demokritos.gr/~bgat/ICDAR2011_skew.pdf
-   * */
+
   protected def correctSkew(image: BufferedImage, angle:Double, resolution:Double): BufferedImage = {
     val correctionAngle = detectSkewAngle(thresholdAndInvert(image, 205, 255), angle, resolution)
     rotate(image, correctionAngle.toDouble, true)
@@ -69,7 +67,7 @@ trait ImageProcessing {
   * threshold and invert image
   * */
 
-  protected def thresholdAndInvert(bi: BufferedImage, threshold:Int, maxVal:Int):BufferedImage = {
+  def thresholdAndInvert(bi: BufferedImage, threshold:Int, maxVal:Int):BufferedImage = {
 
     // convert to grayscale
     val gray = new BufferedImage(bi.getWidth, bi.getHeight, BufferedImage.TYPE_BYTE_GRAY)
@@ -96,7 +94,7 @@ trait ImageProcessing {
   }
 
   /* for debugging purposes only */
-  protected def dumpImage(bi:BufferedImage, filename:String) = {
+  def dumpImage(bi:BufferedImage, filename:String) = {
     import javax.imageio.ImageIO
     val outputfile = new File(filename)
     ImageIO.write(bi, "png", outputfile)
@@ -112,60 +110,6 @@ trait ImageProcessing {
       (inte - 256).toByte
     else
       inte.toByte
-  }
-
-  private def criterionFunc(projections: Array[Int]): Double =
-    projections.map(col => Math.pow(col, 2)).sum
-
-  private def minAreaRect(pointList: List[(Int, Int)]): (Int, Int) = {
-    val maxX = pointList.maxBy(_._2)._2
-    val minX = pointList.minBy(_._2)._2
-
-    val maxY = pointList.maxBy(_._1)._1
-    val minY = pointList.minBy(_._1)._1
-    (maxX - minX, maxY - minY)
-  }
-
-  private def detectSkewAngle(image: BufferedImage, halfAngle:Double, resolution:Double): Double = {
-    val angle_score = Range.Double(-halfAngle, halfAngle + resolution, resolution).par.map { angle =>
-        val rotImage = rotate(image, angle)
-        val projections: Array[Int] = Array.fill(rotImage.getWidth)(0)
-        val rotImageData = rotImage.getRaster().getDataBuffer().asInstanceOf[DataBufferByte].getData
-        val (imgW, imgH) = (rotImage.getWidth, rotImage.getHeight)
-
-        var upMost = imgH
-        var downMost = 0
-        var leftMost = imgW
-        var rightMost = 0
-
-        Range(0, imgW).foreach { i =>
-          Range(0, imgH).foreach { j =>
-            val pixVal = rotImageData(j * imgW + i) // check best way to access data here
-            if (pixVal == -1) {
-              projections(i) += 1
-
-              // find min area rectangle in-situ
-              if (i < leftMost)
-                leftMost = i
-
-              if (i > rightMost)
-                rightMost = i
-
-              if (j > downMost)
-                downMost = j
-
-              if (j < upMost)
-                upMost = j
-            }
-          }
-        }
-
-        val (w, h) = (rightMost- leftMost, downMost - upMost)
-        val score = criterionFunc(projections) / (w * h).toDouble
-        (angle, score)
-    }.toMap
-
-  angle_score.maxBy(_._2)._1
   }
 
   protected def convertToGrayScale(img: BufferedImage): BufferedImage = {

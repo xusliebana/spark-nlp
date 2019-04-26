@@ -26,29 +26,6 @@ class OcrExample extends FlatSpec with ImageProcessing with OcrMetrics {
     dumpImage(tresImg, "thresholded_binarized.png")
   }
 
-  "OcrHelper" should "correctly detect and correct skew angles" in {
-    val img = ImageIO.read(new File("ocr/src/test/resources/images/p1.jpg"))
-    val correctedImg = correctSkew(img, 2.0, 1.0)
-    dumpImage(correctedImg, "skew_corrected.png")
-  }
-
- "OcrHelper" should "automatically correct skew and improve accuracy" in {
-    val spark = getSpark
-    ocrHelper.setPreferredMethod(OCRMethod.IMAGE_LAYER)
-    ocrHelper.setSplitPages(false)
-
-    val normal = ocrHelper.createDataset(spark, s"ocr/src/test/resources/pdfs/rotated/400").
-       select("text").collect.map(_.getString(0)).mkString
-
-    ocrHelper.setAutomaticSkewCorrection(true)
-
-    val skewCorrected = ocrHelper.createDataset(spark, s"ocr/src/test/resources/pdfs/rotated/400").
-        select("text").collect.map(_.getString(0)).mkString
-
-    val correct = Source.fromFile("ocr/src/test/resources/pdfs/rotated/400.txt").mkString
-    assert(score(correct, normal) < score(correct, skewCorrected))
-  }
-
   "OcrHelper" should "correctly handle PDFs with multiple images" in {
 
     val spark = getSpark

@@ -5,21 +5,34 @@ import java.awt.geom.AffineTransform
 import java.io.File
 import java.awt.{Color, Image}
 
+import javax.media.jai.PlanarImage
+
 
 trait ImageProcessing {
 
-
-  protected def correctSkew(image: BufferedImage, angle:Double, resolution:Double): BufferedImage = {
-    val correctionAngle = detectSkewAngle(thresholdAndInvert(image, 205, 255), angle, resolution)
-    rotate(image, correctionAngle.toDouble, true)
+  def reScaleImage(image: PlanarImage, factor: Float):BufferedImage = {
+    reScaleImage(image.getAsBufferedImage(), factor)
   }
+
+  def reScaleImage(image: BufferedImage, factor: Float):BufferedImage = {
+    val width = image.getWidth * factor
+    val height = image.getHeight * factor
+    val scaledImg = image.
+      getScaledInstance(width.toInt, height.toInt, Image.SCALE_AREA_AVERAGING)
+    toBufferedImage(scaledImg)
+  }
+
+  def correctSkew(image: BufferedImage, angleOpt:Option[Double]): Option[BufferedImage] =
+    angleOpt.map { angle =>
+      rotate(image, angle, true)
+    }
 
   /*
   * angle is in degrees
   *
   * adapted from https://stackoverflow.com/questions/30204114/rotating-an-image-object
   * */
-  private def rotate(image:BufferedImage, angle:Double, keepWhite:Boolean = false):BufferedImage = {
+  def rotate(image:BufferedImage, angle:Double, keepWhite:Boolean = false):BufferedImage = {
     // The size of the original image
     val w = image.getWidth
     val h = image.getHeight

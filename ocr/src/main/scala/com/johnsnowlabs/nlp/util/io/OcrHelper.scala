@@ -1,6 +1,6 @@
 package com.johnsnowlabs.nlp.util.io
 
-import java.awt.Image
+import java.awt.{Image, Rectangle}
 import java.awt.image.{BufferedImage, DataBufferByte, RenderedImage}
 import java.io._
 
@@ -81,6 +81,10 @@ class OcrHelper extends ImageProcessing with Serializable {
   /* if defined we resize the image multiplying both width and height by this value */
   var scalingFactor: Option[Float] = None
 
+  /* optional rotation angle in degrees, can be negative */
+  var rotationAngle: Option[Double] = None
+
+
   def setPreferredMethod(value: String): Unit = {
     require(value == OCRMethod.TEXT_LAYER || value == OCRMethod.IMAGE_LAYER, s"OCR Method must be either" +
       s"'${OCRMethod.TEXT_LAYER}' or '${OCRMethod.IMAGE_LAYER}'")
@@ -126,6 +130,13 @@ class OcrHelper extends ImageProcessing with Serializable {
   }
 
   def setScalingFactor(factor:Float): Unit = {
+    if (factor == 1.0f)
+      scalingFactor = None
+    else
+      scalingFactor = Some(factor)
+  }
+
+  def setRotationAngle(factor:Float): Unit = {
     if (factor == 1.0f)
       scalingFactor = None
     else
@@ -212,14 +223,6 @@ class OcrHelper extends ImageProcessing with Serializable {
     api
   }
 
-  def reScaleImage(image: PlanarImage, factor: Float) = {
-    val width = image.getWidth * factor
-    val height = image.getHeight * factor
-    val scaledImg = image.getAsBufferedImage().
-    getScaledInstance(width.toInt, height.toInt, Image.SCALE_AREA_AVERAGING)
-    toBufferedImage(scaledImg)
-  }
-
   /* erode the image */
   def erode(bi: BufferedImage, kernelSize: Int) = {
     // convert to grayscale
@@ -287,7 +290,6 @@ class OcrHelper extends ImageProcessing with Serializable {
     val converted = inputData.map(fromUnsigned)
 
     // convolution and nonlinear op (minimum)
-    // TODO must use adaptive thresholding
     outputData.indices.par.foreach { idx =>
       if (converted(idx) < 170) {
         outputData(idx) = fromSigned(2)
@@ -298,6 +300,8 @@ class OcrHelper extends ImageProcessing with Serializable {
     dest
   }
 
+  def localScale(dilatedImage: BufferedImage, rectangle: Rectangle) = (dilatedImage, rectangle)
+
   // TODO: Sequence return type should be enough
   private def tesseractMethod(renderedImages:Seq[RenderedImage]): Option[Seq[(String, Int)]] = this.synchronized {
     import scala.collection.JavaConversions._
@@ -306,9 +310,8 @@ class OcrHelper extends ImageProcessing with Serializable {
       val image = PlanarImage.wrapRenderedImage(render)
 
       // correct skew if parameters are provided
-      val skewCorrected = halfAngle.flatMap{angle => resolution.map {res =>
-        correctSkew(image.getAsBufferedImage, angle, res)
-      }}.getOrElse(image.getAsBufferedImage)
+      val skewCorrected = correctSkew(image.getAsBufferedImage)
+      .getOrElse(image.getAsBufferedImage)
 
       // rescale if factor provided
       var scaledImage = scalingFactor.map { factor =>
@@ -333,7 +336,8 @@ class OcrHelper extends ImageProcessing with Serializable {
       }
 
       regions.flatMap(_.map { rectangle =>
-        tesseract.doOCR(dilatedImage, rectangle)
+        val (scaledImage, scaledRect) = localScale(dilatedImage, rectangle)
+        tesseract.doOCR(scaledImage, scaledRect)
       })
     })
 
@@ -356,7 +360,6 @@ class OcrHelper extends ImageProcessing with Serializable {
   }
 
   private def pdfboxMethod(pdfDoc: PDDocument, startPage: Int, endPage: Int): Option[Seq[(String, Int)]] = {
-    println("log: extracting w/PDFBox")
     // TODO check this is getting the right page num
     val range = startPage to endPage
     if (splitPages)

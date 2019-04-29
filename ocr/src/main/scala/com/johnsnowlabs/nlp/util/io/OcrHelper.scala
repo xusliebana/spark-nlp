@@ -136,11 +136,11 @@ class OcrHelper extends ImageProcessing with Serializable {
       scalingFactor = Some(factor)
   }
 
-  def setRotationAngle(factor:Float): Unit = {
-    if (factor == 1.0f)
-      scalingFactor = None
+  def setRotationAngle(angle:Float): Unit = {
+    if (angle == 0.0f)
+      rotationAngle = None
     else
-      scalingFactor = Some(factor)
+      rotationAngle = Some(angle)
   }
 
   /* here we make sure '!pageSplit && regionSplit' cannot happen
@@ -310,7 +310,7 @@ class OcrHelper extends ImageProcessing with Serializable {
       val image = PlanarImage.wrapRenderedImage(render)
 
       // correct skew if parameters are provided
-      val skewCorrected = correctSkew(image.getAsBufferedImage)
+      val skewCorrected = correctSkew(image.getAsBufferedImage, rotationAngle)
       .getOrElse(image.getAsBufferedImage)
 
       // rescale if factor provided

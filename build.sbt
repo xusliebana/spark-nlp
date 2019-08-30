@@ -1,8 +1,33 @@
 import sbtassembly.MergeStrategy
 
+/** Version variables */
 val sparkVer = "2.4.3"
 val scalaVer = "2.11.12"
 val scalaTestVersion = "3.0.0"
+
+val awsSDKVer = "1.11.603"
+val configVer = "1.3.0"
+val greexVer = "1.0"
+val hadoopVer = "3.2.0"
+val jaiCoreVer = "1.1.3"
+val jbig2ImageioVer = "3.0.2"
+val json4sVer = "3.5.3"
+val junitVer = "4.10"
+val liblevenshteinVer = "3.0.0"
+val pdfboxVer = "2.0.13"
+val rocksdbVer = "5.17.2"
+val tensorflowVer = "1.12.0"
+val tess4jVer = "4.2.1"
+val trove4jVer = "3.0.3"
+
+/** Spark-Package attributes */
+organization:= "com.johnsnowlabs.nlp"
+spName in ThisBuild := "JohnSnowLabs/spark-nlp"
+version := "2.2.1"
+scalaVersion in ThisBuild := scalaVer
+sparkVersion in ThisBuild := sparkVer
+
+licenses  += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
 
 val is_gpu = System.getProperty("is_gpu","false")
 
@@ -13,28 +38,11 @@ if(is_gpu.equals("false")){
   name:="spark-nlp-gpu"
 }
 
-
-organization:= "com.johnsnowlabs.nlp"
-
-version := "2.2.1"
-
-scalaVersion in ThisBuild := scalaVer
-
-sparkVersion in ThisBuild := sparkVer
-
-/** Spark-Package attributes */
-spName in ThisBuild := "JohnSnowLabs/spark-nlp"
-
 sparkComponents in ThisBuild ++= Seq("mllib")
-
-licenses  += "Apache-2.0" -> url("http://opensource.org/licenses/Apache-2.0")
-
 spIncludeMaven in ThisBuild:= false
-
 spAppendScalaVersion := false
 
 resolvers in ThisBuild += "Maven Central" at "http://central.maven.org/maven2/"
-
 resolvers in ThisBuild += "Spring Plugins" at "http://repo.spring.io/plugins-release/"
 
 assemblyOption in assembly := (assemblyOption in assembly).value.copy(
@@ -48,17 +56,14 @@ ivyScala := ivyScala.value map {
 }
 
 /** Bintray settings */
+bintrayRepository := "spark-nlp"
+bintrayOrganization:= Some("johnsnowlabs")
+sonatypeProfileName := "com.johnsnowlabs"
 bintrayPackageLabels := Seq("nlp", "nlu",
   "natural-language-processing", "natural-language-understanding",
   "spark", "spark-ml", "pyspark", "machine-learning",
   "named-entity-recognition", "sentiment-analysis", "lemmatizer", "spell-checker",
   "tokenizer", "stemmer", "part-of-speech-tagger", "annotation-framework")
-
-bintrayRepository := "spark-nlp"
-
-bintrayOrganization:= Some("johnsnowlabs")
-
-sonatypeProfileName := "com.johnsnowlabs"
 
 publishTo := Some(
   if (isSnapshot.value)
@@ -89,12 +94,12 @@ developers in ThisBuild:= List(
 target in Compile in doc := baseDirectory.value / "docs/api"
 
 lazy val ocrDependencies = Seq(
-  "net.sourceforge.tess4j" % "tess4j" % "4.2.1"
+  "net.sourceforge.tess4j" % "tess4j" % tess4jVer
     exclude("org.slf4j", "slf4j-log4j12")
     exclude("org.apache.logging", "log4j"),
-  "org.apache.pdfbox" % "pdfbox" % "2.0.13",
-  "org.apache.pdfbox" % "jbig2-imageio" % "3.0.2",
-  "javax.media.jai" % "com.springsource.javax.media.jai.core" % "1.1.3"
+  "org.apache.pdfbox" % "pdfbox" % pdfboxVer,
+  "org.apache.pdfbox" % "jbig2-imageio" % jbig2ImageioVer,
+  "javax.media.jai" % "com.springsource.javax.media.jai.core" % jaiCoreVer
 )
 
 lazy val analyticsDependencies = Seq(
@@ -102,50 +107,48 @@ lazy val analyticsDependencies = Seq(
   "org.apache.spark" %% "spark-mllib" % sparkVer % "provided"
 )
 
-lazy val testDependencies = Seq(
-  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
-)
-
 lazy val utilDependencies = Seq(
-  "com.typesafe" % "config" % "1.3.0",
-  "org.rocksdb" % "rocksdbjni" % "5.17.2",
-  "org.apache.hadoop" % "hadoop-aws" %  "3.2.0"
+  "com.typesafe" % "config" % configVer,
+  "org.rocksdb" % "rocksdbjni" % rocksdbVer,
+  "org.apache.hadoop" % "hadoop-aws" %  hadoopVer
     exclude("com.fasterxml.jackson.core", "jackson-annotations")
     exclude("com.fasterxml.jackson.core", "jackson-databind")
     exclude("com.fasterxml.jackson.core", "jackson-core")
     exclude("commons-configuration","commons-configuration")
     exclude("com.amazonaws","aws-java-sdk-bundle")
     exclude("org.apache.hadoop" ,"hadoop-common"),
-  "com.amazonaws" % "aws-java-sdk-core" % "1.11.603"
+  "com.amazonaws" % "aws-java-sdk-core" % awsSDKVer
     exclude("com.fasterxml.jackson.core", "jackson-annotations")
     exclude("com.fasterxml.jackson.core", "jackson-databind")
     exclude("com.fasterxml.jackson.core", "jackson-core")
     exclude("commons-configuration","commons-configuration"),
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.603",
-  "org.rocksdb" % "rocksdbjni" % "5.17.2",
-  "com.github.universal-automata" % "liblevenshtein" % "3.0.0"
+  "com.amazonaws" % "aws-java-sdk-s3" % awsSDKVer,
+  "org.rocksdb" % "rocksdbjni" % rocksdbVer,
+  "com.github.universal-automata" % "liblevenshtein" % liblevenshteinVer
     exclude("com.google.guava", "guava")
     exclude("org.apache.commons", "commons-lang3"),
-  "com.navigamez" % "greex" % "1.0",
-  "org.json4s" %% "json4s-ext" % "3.5.3"
-
+  "com.navigamez" % "greex" % greexVer,
+  "org.json4s" %% "json4s-ext" % json4sVer
 )
 
-
 lazy val typedDependencyParserDependencies = Seq(
-  "net.sf.trove4j" % "trove4j" % "3.0.3",
-  "junit" % "junit" % "4.10" % Test
+  "net.sf.trove4j" % "trove4j" % trove4jVer,
+  "junit" % "junit" % junitVer % Test // Why is this here and not in the testDependencies?
 )
 val tensorflowDependencies: Seq[sbt.ModuleID] =
   if (is_gpu.equals("true"))
     Seq(
-      "org.tensorflow" % "libtensorflow" % "1.12.0",
-      "org.tensorflow" % "libtensorflow_jni_gpu" % "1.12.0"
+      "org.tensorflow" % "libtensorflow" % tensorflowVer,
+      "org.tensorflow" % "libtensorflow_jni_gpu" % tensorflowVer
     )
   else
     Seq(
-      "org.tensorflow" % "tensorflow" % "1.12.0"
+      "org.tensorflow" % "tensorflow" % tensorflowVer
     )
+
+lazy val testDependencies = Seq(
+  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+)
 
 lazy val root = (project in file("."))
   .settings(

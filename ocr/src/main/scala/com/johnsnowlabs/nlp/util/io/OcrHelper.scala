@@ -315,7 +315,7 @@ class OcrHelper extends ImageProcessing with Serializable {
 
       // rescale if factor provided
       var scaledImage = scalingFactor.map { factor =>
-        reScaleImage(image, factor)
+        reScaleImage(skewCorrected, factor)
       }.getOrElse(skewCorrected)
 
       // erode if kernel provided
@@ -336,8 +336,8 @@ class OcrHelper extends ImageProcessing with Serializable {
       }
 
       regions.flatMap(_.map { rectangle =>
-        val (scaledImage, scaledRect) = localScale(dilatedImage, rectangle)
-        tesseract.doOCR(scaledImage, scaledRect)
+        val (locallyScaledImage, scaledRect) = localScale(dilatedImage, rectangle)
+        tesseract.doOCR(locallyScaledImage, scaledRect)
       })
     })
 

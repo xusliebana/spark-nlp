@@ -50,13 +50,18 @@ class TextClassifierApproach(override val uid: String)
   val featureCol = new Param[String](this, "featureCol", "the type of features that is going to be used in ML model.. options: tfidf, cvec, w2v, bert") // not sure if we have Param[String] or just StringParam??
   def setFeatureCol(value: String): this.type = set(featureCol, value)
   def getFeatureCol(value: String): String = $(featureCol)
+
+  val multiLabel = new BooleanParam (this, "multiLabel", "is this a multilable or single lable classification problem")
+  def setMultiLabel(value: String): this.type = set(multiLabel, value)
+  def getMultiLabel(value: String): String = $(multiLabel)
         
   // TODO: accuracyMetrics, cv, etc.
 
   setDefault(
     labelCol -> "label",
     classifierName -> "rf",
-    featureCol -> "w2v"
+    featureCol -> "w2v",
+    multiLabel -> false
   )
     
         

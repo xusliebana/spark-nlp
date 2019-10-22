@@ -52,7 +52,10 @@ class TextClassifierModel(override val uid: String) extends AnnotatorModel[TextC
   def setFeatureCol(value: String): this.type = set(featureCol, value)
   def getFeatureCol(value: String): String = $(featureCol)
 
-    
+  val multiLabel = new BooleanParam (this, "multiLabel", "is this a multilable or single lable classification problem")
+  def setMultiLabel(value: String): this.type = set(multiLabel, value)
+  def getMultiLabel(value: String): String = $(multiLabel)
+
 }
     
 object TextClassifierModel extends ParamsAndFeaturesReadable[TextClassifierModel]

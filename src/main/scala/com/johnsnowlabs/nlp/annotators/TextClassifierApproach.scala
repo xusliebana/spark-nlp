@@ -23,7 +23,7 @@ import org.apache.spark.ml.classification._
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.ml.feature.Word2Vec
 import org.apache.spark.ml.feature.StringIndexer
-
+import org.apache.spark.sql.functions.{array, col, explode, udf}
 
 class TextClassifierApproach(override val uid: String) 
     extends AnnotatorApproach[TextClassifierModel] {
@@ -68,22 +68,29 @@ class TextClassifierApproach(override val uid: String)
   override def train(dataset: Dataset[_], recursivePipeline: Option[PipelineModel]): TextClassifierModel = {
 
     require(get(labelCol).isDefined, "TextClassifierApproach needs 'labelCol' to be set for training")
+    require(get(featureCol).isDefined, "TextClassifierApproach needs 'featureCol' to be set for training")
     require(get(classifierName).isDefined, "TextClassifierApproach needs 'classifierName' to be set for training")
+
+    // If column is not Vector, convert 
+    def getFeatureColumn(df: DataFrame): DataFrame = {
+      df.schema("features").dataType match {
+        ...
+      }
+    }
             
     // this could be out of this annotator.. but the user should give an array of floats.. 
+    /*
     val finisher = new Finisher()
       .setInputCols($(featureCol)) // what if featurecol is already an array of floats (rather than sparknlp struct col) ?
       .setOutputCols(Array("features")) 
       .setOutputAsArray(true)
       .setCleanAnnotations(true)
-     
+     */
     val label_stringIdx = new StringIndexer()
       .setInputCol($(labelCol))
       .setOutputCol("label")
 
-    
-    val clf_pipeline = new Pipeline().setStages(Array(finisher, label_stringIdx))
-    val processed_dataset = clf_pipeline.fit(dataset).transform(dataset)
+    val processed_dataset = label_stringIdx.fit(dataset).transform(dataset)
     
     val Array(trainingData, testData) = processed_dataset.randomSplit(Array(0.7, 0.3), seed)
       // TODO: use testData to return metrics
@@ -93,6 +100,7 @@ class TextClassifierApproach(override val uid: String)
       if ($(classifierName) == "lr") new LogisticRegression()
       if ($(classifierName) == "nb") new NaiveBayes()
     }
+  // full list of available classifiers here: https://spark.apache.org/docs/latest/ml-classification-regression.html
 
     model.train(trainingData)
     
@@ -103,12 +111,20 @@ class TextClassifierApproach(override val uid: String)
       .setClassifier($(classifierName))
       .setFeatureType($(featureCol))
   }
-  /* where to use this?
+  /* where to use these ?
   // Convert indexed labels back to original labels.
     val labelConverter = new IndexToString()
       .setInputCol("prediction")
       .setOutputCol("predictedLabel")
       .setLabels(label_stringIdx.labels)
+
+  // Select (prediction, true label) and compute test error.
+    val evaluator = new MulticlassClassificationEvaluator()
+      .setLabelCol("label")
+      .setPredictionCol("prediction")
+      .setMetricName("accuracy")
+    val accuracy = evaluator.evaluate(predictions)
+    println("Test Error = " + (1.0 - accuracy))
   */
         
 }

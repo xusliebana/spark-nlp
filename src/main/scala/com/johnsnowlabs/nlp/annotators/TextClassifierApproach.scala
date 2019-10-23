@@ -95,11 +95,14 @@ class TextClassifierApproach(override val uid: String)
     val Array(trainingData, testData) = processed_dataset.randomSplit(Array(0.7, 0.3), seed)
       // TODO: use testData to return metrics
    
-    val model = {
-      if ($(classifierName) == "rf") new RandomForestClassifier()
-      if ($(classifierName) == "lr") new LogisticRegression()
-      if ($(classifierName) == "nb") new NaiveBayes()
+
+    val model = $(classifierName) match {
+    case "rf" => new RandomForestClassifier()
+    case "lr" => new LogisticRegression()
+    case "nb" => new NaiveBayes()
+    case _   => throw new Exception("Unsupported classifier name")
     }
+
   // full list of available classifiers here: https://spark.apache.org/docs/latest/ml-classification-regression.html
 
     model.train(trainingData)

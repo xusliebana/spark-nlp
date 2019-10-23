@@ -103,13 +103,13 @@ class TextClassifierApproach(override val uid: String)
   // full list of available classifiers here: https://spark.apache.org/docs/latest/ml-classification-regression.html
 
     model.train(trainingData)
-    
-    model
       
     val model = new TextClassifierModel()
       .setLabelColumn($(labelCol))
       .setClassifier($(classifierName))
       .setFeatureType($(featureCol))
+
+    model
   }
   /* where to use these ?
   // Convert indexed labels back to original labels.

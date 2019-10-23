@@ -56,6 +56,11 @@ class TextClassifierModel(override val uid: String) extends AnnotatorModel[TextC
   def setMultiLabel(value: String): this.type = set(multiLabel, value)
   def getMultiLabel(value: String): String = $(multiLabel)
 
+  override def annotate(annotations: Seq[Annotation]): Seq[Annotation] = {
+
+    ....
+  }
+
 }
     
 object TextClassifierModel extends ParamsAndFeaturesReadable[TextClassifierModel]

@@ -70,15 +70,17 @@ class TextClassifierApproach(override val uid: String)
     require(get(labelCol).isDefined, "TextClassifierApproach needs 'labelCol' to be set for training")
     require(get(classifierName).isDefined, "TextClassifierApproach needs 'classifierName' to be set for training")
             
+    // this could be out of this annotator.. but the user should give an array of floats.. 
     val finisher = new Finisher()
-      .setInputCols($(featureCol))
-      .setOutputCols(Array("features"))
+      .setInputCols($(featureCol)) // what if featurecol is already an array of floats (rather than sparknlp struct col) ?
+      .setOutputCols(Array("features")) 
       .setOutputAsArray(true)
       .setCleanAnnotations(true)
      
     val label_stringIdx = new StringIndexer()
       .setInputCol($(labelCol))
       .setOutputCol("label")
+
     
     val clf_pipeline = new Pipeline().setStages(Array(finisher, label_stringIdx))
     val processed_dataset = clf_pipeline.fit(dataset).transform(dataset)
@@ -101,6 +103,13 @@ class TextClassifierApproach(override val uid: String)
       .setClassifier($(classifierName))
       .setFeatureType($(featureCol))
   }
+  /* where to use this?
+  // Convert indexed labels back to original labels.
+    val labelConverter = new IndexToString()
+      .setInputCol("prediction")
+      .setOutputCol("predictedLabel")
+      .setLabels(label_stringIdx.labels)
+  */
         
 }
 

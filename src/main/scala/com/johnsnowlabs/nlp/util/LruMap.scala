@@ -4,21 +4,18 @@ import scala.collection.mutable
 
 
 class LruMap[TKey, TValue](maxCacheSize: Int) {
-  private val cache = mutable.Map.empty[TKey, TValue]
-  private val lru = mutable.PriorityQueue[KeyPriority]()(KeyPriorityOrdering)
+  private type QueryCount = Int
+  private var cache = mutable.Map.empty[TKey, (TValue, QueryCount)]
 
-  private var priorityCounter = 0
   private var size = 0
 
-  private def deleteOne(): Unit = {
-    val oldest = lru.dequeue().key
-    cache.remove(oldest)
+  private def deleteBulk(): Unit = {
+    size = (size / 1.3).toInt
+    cache = mutable.Map[TKey, (TValue, QueryCount)](cache.toList.sortBy(-_._2._2).take(size): _*)
   }
 
   def clear(): Unit = {
     cache.clear()
-    lru.clear()
-    priorityCounter = 0
     size = 0
   }
 
@@ -26,37 +23,38 @@ class LruMap[TKey, TValue](maxCacheSize: Int) {
     size
   }
 
-  def foreach: (((TKey, TValue)) => Any) => Unit = cache.foreach
-
-  def update(key: TKey, value: => TValue): TValue = {
+  def getOrElseUpdate(key: TKey, value: => TValue): TValue = {
     val isNewKey = !cache.contains(key)
-    if (isNewKey && getSize >= maxCacheSize)
-      deleteOne()
-    else if (isNewKey)
-      size += 1
-
-    cache(key) = value
-    priorityCounter += 1
-    lru.enqueue(KeyPriority(key, priorityCounter))
-    value
-  }
-
-  def getOrElseUpdate(key: TKey, valueCreator: => TValue): TValue = {
-    val oldValue = cache.get(key)
-    if (oldValue.isDefined) {
-      oldValue.get
+    if (!isNewKey) {
+      val content = cache(key)
+      cache(key) = (content._1, content._2+1)
+      content._1
     } else {
-      update(key, valueCreator)
+      if (getSize >= maxCacheSize)
+        deleteBulk()
+      size += 1
+      val content = value
+      cache(key) = (content, 0)
+      content
     }
   }
 
-  def get(key: TKey): TValue = {
-    cache(key)
+  def get(key: TKey): Option[TValue] = {
+    val current = cache.get(key)
+    if (current.isDefined) {
+      val priority = current.get._2 + 1
+      cache(key) = (current.get._1, priority)
+      Some(current.get._1)
+    } else None
   }
 
-  case class KeyPriority(key: TKey, priority: Int)
-
-  object KeyPriorityOrdering extends Ordering[KeyPriority] {
-    override def compare(x: KeyPriority, y: KeyPriority): Int = x.priority.compareTo(y.priority)
+  private object KeyPriorityOrdering extends Ordering[TKey] {
+    override def compare(x: TKey, y: TKey): Int = {
+      if (x == y) return 0
+      val a = cache.get(x).map(_._2).getOrElse(0)
+      val b = cache.get(y).map(_._2).getOrElse(0)
+      if (a > b) -1 else 1
+    }
   }
+
 }

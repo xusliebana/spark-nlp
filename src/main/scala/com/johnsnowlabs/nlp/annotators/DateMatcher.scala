@@ -3,7 +3,6 @@ package com.johnsnowlabs.nlp.annotators
 import java.text.SimpleDateFormat
 
 import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel}
-
 import java.util.Calendar
 
 import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
@@ -50,8 +49,8 @@ class DateMatcher(override val uid: String) extends AnnotatorModel[DateMatcher] 
     val possibleDates = relaxedFactory.findMatch(text)
     if (possibleDates.length > 1) {
       var dayMatch = $(defaultDayWhenMissing)
-      var monthMatch = 0
-      var yearMatch = Calendar.getInstance().getWeekYear
+      var monthMatch = defaultMonthWhenMissing
+      var yearMatch = defaultYearWhenMissing
 
       val dayCandidate = possibleDates.find(_.identifier == "relaxed days")
       if (dayCandidate.isDefined && dayCandidate.get.content.matched.exists(_.isDigit)) {

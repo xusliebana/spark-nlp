@@ -2,13 +2,9 @@ package com.johnsnowlabs.nlp.annotators
 
 import java.text.SimpleDateFormat
 
-import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel, AnnotatorType}
-
-import scala.util.matching.Regex
+import com.johnsnowlabs.nlp.{Annotation, AnnotatorModel}
 import java.util.Calendar
 
-import com.johnsnowlabs.nlp.util.regex.{MatchStrategy, RuleFactory}
-import org.apache.spark.ml.param.Param
 import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
 
 /**
@@ -64,8 +60,8 @@ class MultiDateMatcher(override val uid: String) extends AnnotatorModel[MultiDat
   private def extractRelaxedDate(text: String): Seq[MatchedDateTime] = {
     val possibleDates = relaxedFactory.findMatch(text)
     var dayMatch = $(defaultDayWhenMissing)
-    var monthMatch = 0
-    var yearMatch = Calendar.getInstance().getWeekYear
+    var monthMatch = defaultMonthWhenMissing
+    var yearMatch = defaultYearWhenMissing
     var changes = 0
     possibleDates.foreach(possibleDate => {
 

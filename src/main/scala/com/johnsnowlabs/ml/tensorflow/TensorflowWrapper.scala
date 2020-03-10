@@ -131,7 +131,7 @@ class TensorflowWrapper(
     msession
   }
 
-  def saveToFile(file: String, configProtoBytes: Option[Array[Byte]] = None): Unit = {
+  def saveToFile(file: String, configProtoBytes: Option[Array[Byte]] = None, isStatic: Boolean = true): Unit = {
     val t = new TensorResources()
 
     // 1. Create tmp director
@@ -140,11 +140,13 @@ class TensorflowWrapper(
 
     val variablesFile = Paths.get(folder, "variables").toString
 
+    if (!isStatic) //Should be False for most models
     // 2. Save variables
-    getSession(configProtoBytes).runner.addTarget("save/control_dependency")
-      .feed("save/Const", t.createTensor(variablesFile))
-      .run()
-
+    {
+      getSession(configProtoBytes).runner.addTarget("save/control_dependency")
+        .feed("save/Const", t.createTensor(variablesFile))
+        .run()
+    }
     // 3. Save Graph
     // val graphDef = graph.toGraphDef
     val graphFile = Paths.get(folder, "saved_model.pb").toString
@@ -184,7 +186,7 @@ class TensorflowWrapper(
     Files.write(file.toAbsolutePath, bytes)
 
     // 2. Read from file
-    val tf = TensorflowWrapper.read(file.toString, zipped = true)
+    val tf = TensorflowWrapper.read(file.toString)
 
     this.msession = tf.getSession()
     this.graph = tf.graph
@@ -207,7 +209,7 @@ object TensorflowWrapper {
     } catch {
       case e: org.tensorflow.TensorFlowException if e.getMessage.contains("Op type not registered 'BlockLSTM'") =>
         throw new UnsupportedOperationException("Spark NLP tried to load a TensorFlow Graph using Contrib module, but" +
-          " failed to load it on this system. If you are on Windows, this operation is not supported. Please try a noncontrib model." +
+          " failed to load it on this system. If you are on Windows, tqhis operation is not supported. Please try a noncontrib model." +
           s" If not the case, please report this issue. Original error message:\n\n${e.getMessage}")
     }
     graph
@@ -218,7 +220,8 @@ object TensorflowWrapper {
             zipped: Boolean = true,
             useBundle: Boolean = false,
             tags: Array[String] = Array.empty[String],
-            initAllTables: Boolean = false
+            initAllTables: Boolean = false,
+            isStaticGraph: Boolean = false
           ): TensorflowWrapper = {
     val t = new TensorResources()
 
@@ -250,13 +253,15 @@ object TensorflowWrapper {
       val session = new Session(graph, tfSessionConfig)
       val varPath = Paths.get(folder, "variables.data-00000-of-00001")
       val idxPath = Paths.get(folder, "variables.index")
-      if(initAllTables) {
+      if (initAllTables) {
         session.runner
           .addTarget("save/restore_all")
           .addTarget("init_all_tables")
           .feed("save/Const", t.createTensor(Paths.get(folder, "variables").toString))
           .run()
-      }else{
+      }
+
+      else if (!isStaticGraph) { //static graphs have nothing to restore
         session.runner
           .addTarget("save/restore_all")
           .feed("save/Const", t.createTensor(Paths.get(folder, "variables").toString))
@@ -265,9 +270,17 @@ object TensorflowWrapper {
       (graph, session, varPath, idxPath)
     }
 
-    val varBytes = Files.readAllBytes(varPath)
+    val varBytes = if (isStaticGraph) {
+      Array[Byte]()
+    } else {
+      Files.readAllBytes(varPath)
+    }
+    val idxBytes = if (isStaticGraph) {
+      Array[Byte]()
+    } else {
+      Files.readAllBytes(idxPath)
+    }
 
-    val idxBytes = Files.readAllBytes(idxPath)
 
     // 4. Remove tmp folder
     FileHelper.delete(tmpFolder)
@@ -277,6 +290,7 @@ object TensorflowWrapper {
     tfWrapper.msession = session
     tfWrapper
   }
+
 
   def extractVariables(session: Session): Variables = {
     val t = new TensorResources()
@@ -302,4 +316,48 @@ object TensorflowWrapper {
     vars
   }
 
+  def readWithCustomOps(
+                         file: String,
+                         zipped: Boolean = true,
+                         useBundle: Boolean = false,
+                         tags: Array[String] = Array.empty[String],
+                         initAllTables: Boolean = false,
+                         customOperationsSoFilePath: String
+                       ): TensorflowWrapper = {
+    val t = new TensorResources()
+
+    // 1. Create tmp folder
+    val tmpFolder = Files.createTempDirectory(UUID.randomUUID().toString.takeRight(12) + "_ner")
+      .toAbsolutePath.toString
+
+    // 2. Unpack archive
+    val folder = if (zipped)
+      ZipArchiveUtil.unzip(new File(file), Some(tmpFolder))
+    else
+      file
+
+    LoadsContrib.loadContribToTensorflow()
+
+    // 3. Read file as SavedModelBundle
+    val (graph, session) = if (useBundle) {
+      TensorFlow.loadLibrary(customOperationsSoFilePath)
+
+      val model = SavedModelBundle.load(folder, tags: _*)
+      val graph = model.graph()
+      val session = model.session()
+      if (initAllTables) {
+        session.runner().addTarget("init_all_tables")
+      }
+      (graph, session)
+    }
+
+
+    // 4. Remove tmp folder
+    FileHelper.delete(tmpFolder)
+    t.clearTensors()
+
+    val tfWrapper = new TensorflowWrapper(Variables(Array[Byte](), Array[Byte]()), graph.asInstanceOf[Graph].toGraphDef) // THIS GRAPH HAS NO VARIABLES!!
+    tfWrapper.msession = session.asInstanceOf[Session]
+    tfWrapper
+  }
 }

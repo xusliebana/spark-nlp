@@ -12,7 +12,6 @@ import org.apache.spark.sql.SparkSession
 
 trait WriteTensorflowModel {
 
-
   def writeTensorflowModel(
                             path: String,
                             spark: SparkSession,
@@ -75,10 +74,12 @@ trait ReadTensorflowModel {
                            path: String,
                            spark: SparkSession,
                            suffix: String,
-                           zipped:Boolean = true,
-                           useBundle:Boolean = false,
-                           tags:Array[String]=Array.empty,
-                           initAllTables: Boolean = false
+                           zipped: Boolean = true,
+                           useBundle: Boolean = false,
+                           tags: Array[String] = Array.empty,
+                           initAllTables: Boolean = false,
+                           isStaticGraph: Boolean = false
+
                          ): TensorflowWrapper = {
 
     LoadsContrib.loadContribToCluster(spark)
@@ -95,7 +96,7 @@ trait ReadTensorflowModel {
 
     // 3. Read Tensorflow state
     val tf = TensorflowWrapper.read(new Path(tmpFolder, tfFile).toString,
-      zipped, tags = tags, useBundle = useBundle, initAllTables = initAllTables)
+      zipped, tags = tags, useBundle = useBundle, initAllTables = initAllTables, isStaticGraph = isStaticGraph)
 
     // 4. Remove tmp folder
     FileHelper.delete(tmpFolder)

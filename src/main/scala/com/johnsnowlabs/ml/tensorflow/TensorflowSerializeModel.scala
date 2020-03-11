@@ -12,12 +12,14 @@ import org.apache.spark.sql.SparkSession
 
 trait WriteTensorflowModel {
 
+// POTENTIALLY update for static models
   def writeTensorflowModel(
                             path: String,
                             spark: SparkSession,
                             tensorflow: TensorflowWrapper,
-                            suffix: String, filename:String,
-                            configProtoBytes: Option[Array[Byte]] = None
+                            suffix: String, filename: String,
+                            configProtoBytes: Option[Array[Byte]] = None,
+                            isStatic: Boolean = false
                           ): Unit = {
 
     val uri = new java.net.URI(path.replaceAllLiterally("\\", "/"))
@@ -30,7 +32,7 @@ trait WriteTensorflowModel {
     val tfFile = Paths.get(tmpFolder, filename).toString
 
     // 2. Save Tensorflow state
-    tensorflow.saveToFile(tfFile, configProtoBytes)
+    tensorflow.saveToFile(tfFile, configProtoBytes, isStatic)
 
     // 3. Copy to dest folder
     fs.copyFromLocalFile(new Path(tfFile), new Path(path))

@@ -131,7 +131,7 @@ class TensorflowWrapper(
     msession
   }
 
-  def saveToFile(file: String, configProtoBytes: Option[Array[Byte]] = None, isStatic: Boolean = true): Unit = {
+  def saveToFile(file: String, configProtoBytes: Option[Array[Byte]] = None, isStatic: Boolean = false): Unit = {
     val t = new TensorResources()
 
     // 1. Create tmp director

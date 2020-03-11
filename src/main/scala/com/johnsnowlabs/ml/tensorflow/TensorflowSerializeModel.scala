@@ -12,7 +12,6 @@ import org.apache.spark.sql.SparkSession
 
 trait WriteTensorflowModel {
 
-// POTENTIALLY update for static models
   def writeTensorflowModel(
                             path: String,
                             spark: SparkSession,

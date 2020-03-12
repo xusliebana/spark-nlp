@@ -1,7 +1,6 @@
 package com.johnsnowlabs.nlp
 
 object AnnotatorType {
-  val ID_TOKENS = "id_tokens"
   val DOCUMENT = "document"
   val TOKEN = "token"
   val WORDPIECE = "wordpiece"

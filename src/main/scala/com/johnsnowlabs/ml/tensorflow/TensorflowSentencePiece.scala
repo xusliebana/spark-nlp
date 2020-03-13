@@ -24,9 +24,9 @@ import scala.collection.Map
 class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
                               batchSize: Int,
                               configProtoBytes: Option[Array[Byte]] = None,
-                              EOSToken: String = "[TODO]"
+                              EOSToken: String = "[TODO]",
+                              maxTokenLength: Int = 100
                              ) extends Serializable {
-
 
   /**
     * Calculate the embeddings for a sequence of Tokens and create WordPieceEmbeddingsSentence objects from them
@@ -123,7 +123,8 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
 
 
     val outs = runner.run().asScala
-    val tokensBytes = TensorResources.extractBytes(outs(0)) // Depends on the fetch order!
+    val amountOftokens = 1000
+    val tokensBytes = TensorResources.extractBytes(outs(0), maxTokenLength = maxTokenLength, amountOfTokens = amountOftokens) // Depends on the fetch order!
     //    val seq_lens = TensorResources.extractInts(outs(1))
     val string = new String(tokensBytes, "UTF-8");
 

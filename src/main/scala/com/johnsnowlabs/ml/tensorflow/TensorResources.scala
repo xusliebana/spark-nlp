@@ -114,7 +114,7 @@ object TensorResources {
   }
 
   //used for extracting bytes/strings from tensors, like SentencePiece Decoding
-  def extractBytes(source: Tensor[_], size: Option[Int] = None): Array[Byte] = {
+  def extractBytes(source: Tensor[_], size: Option[Int] = None, maxTokenLength: Int, amountOfTokens: Int): Array[Byte] = {
     val realSize = calculateTensorSize(source, size, true) + 10000 // todo bugfi
     val buffer = ByteBuffer.allocate(realSize)
     print("Size " + realSize)

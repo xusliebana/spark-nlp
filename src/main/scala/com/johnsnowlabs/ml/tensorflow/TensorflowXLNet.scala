@@ -134,7 +134,7 @@ class TensorflowXLNet(val tensorflow: TensorflowWrapper,
       .fetch(outputSequenceKey)
     //
     val outs = runner.run().asScala
-    // This takes veeeeeeeeeeeerry long!
+
     val embeddings = TensorResources.extractFloats(outs.head)
     //
     tensors.clearSession(outs)

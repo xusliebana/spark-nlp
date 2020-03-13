@@ -32,6 +32,14 @@ class TensorResources {
     result
   }
 
+  def createFloatBufferTensor[T](shape: Array[Long], buf: FloatBuffer): Tensor[_] = {
+
+    val result = Tensor.create(shape, buf)
+
+    tensors.append(result)
+    result
+  }
+
   def createBytesBufferTensor[T](shape: Array[Long], buf: ByteBuffer): Tensor[_] = {
 
     val result = Tensor.create(classOf[String], shape, buf)
@@ -55,16 +63,33 @@ class TensorResources {
   def createIntBuffer(dim: Int): IntBuffer = {
     IntBuffer.allocate(dim)
   }
+
+  def createFloatBuffer(dim: Int): FloatBuffer = {
+    FloatBuffer.allocate(dim)
+  }
 }
 
 object TensorResources {
 
-  def calculateTensorSize(source: Tensor[_], size: Option[Int]): Int = {
-    size.getOrElse{
-      // Calculate real size from tensor shape
-      val shape = source.shape()
-      shape.foldLeft(1l)(_*_).toInt
+  def calculateTensorSize(source: Tensor[_], size: Option[Int], isBytes: Boolean = false): Int = {
+
+    if (isBytes) {
+      size.getOrElse {
+        // Calculate real size from tensor shape
+        val shape = source.shape()
+        shape.foldLeft(1l)(_ * _).toString.length
+      }
     }
+
+    else {
+      size.getOrElse {
+        // Calculate real size from tensor shape
+        val shape = source.shape()
+        shape.foldLeft(1l)(_ * _).toInt
+      }
+    }
+
+
   }
 
   def extractInts(source: Tensor[_], size: Option[Int] = None): Array[Int] = {
@@ -82,9 +107,21 @@ object TensorResources {
   }
 
   def extractFloats(source: Tensor[_], size: Option[Int] = None): Array[Float] = {
-    val realSize = calculateTensorSize(source ,size)
+    val realSize = calculateTensorSize(source, size)
     val buffer = FloatBuffer.allocate(realSize)
     source.writeTo(buffer)
     buffer.array().map(item => item)
   }
+
+  //used for extracting bytes/strings from tensors, like SentencePiece Decoding
+  def extractBytes(source: Tensor[_], size: Option[Int] = None): Array[Byte] = {
+    val realSize = calculateTensorSize(source, size, true) + 10000 // todo bugfi
+    val buffer = ByteBuffer.allocate(realSize)
+    print("Size " + realSize)
+
+
+    source.writeTo(buffer)
+    buffer.array().map(item => item)
+  }
+
 }

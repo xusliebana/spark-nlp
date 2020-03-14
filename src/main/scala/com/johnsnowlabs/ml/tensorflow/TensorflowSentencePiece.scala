@@ -118,6 +118,9 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
 
 
     val outs = runner.run().asScala
+    // only real efficient way to allocate bytes is by looking them up in the dctionary. The we know the actualy tokensize.
+    // But then we could also just do all decoding dictionary based..
+
     val tokensBytes = TensorResources.extractBytes(outs(0), maxTokenLength = maxTokenLength) // Depends on the fetch order!
     //    val seq_lens = TensorResources.extractInts(outs(1))
     val string = new String(tokensBytes, "UTF-8");

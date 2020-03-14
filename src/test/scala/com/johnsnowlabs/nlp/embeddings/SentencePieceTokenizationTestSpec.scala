@@ -19,10 +19,10 @@ import org.scalatest._
   */
 class SentencePieceTokenizationTestSpec extends FlatSpec {
   "Sentence Piece Embeddings" should "generate Tokens and ID's" in {
-    System.out.println("Working Directory = " + System.getProperty("user.dir"))
+    val dictPath = "/home/loan/Documents/JohnSnowLabs/Docs/PR/src/test/scala/com/johnsnowlabs/nlp/embeddings/768_xlnet_dict.txt"
     val spModelPath = "/home/loan/Documents/JohnSnowLabs/XLNet/jupyter/SentencePiece/exported_model"
     val soOperationsPath = "/home/loan/venv/XLNET_jupyter_venv/lib/python2.7/site-packages/tf_sentencepiece/_sentencepiece_processor_ops.so.1.14.0"
-    val sentencePieceTokenizer = SentencePieceTokens.loadSavedModel(spModelPath, soOperationsPath, SparkNLP.start()) //Create Spiece Model
+    val sentencePieceTokenizer = SentencePieceTokens.loadSavedModel(spModelPath, soOperationsPath, dictPath, SparkNLP.start()) //Create Spiece Model
 
     val sampleSentence = "Everything that has a beginning has an end."
     val annot = Annotation(annotatorType = "-1", begin = -1, end = -1,
@@ -39,8 +39,8 @@ class SentencePieceTokenizationTestSpec extends FlatSpec {
 
     val decodeIds = Seq(Seq(8248, 29, 51, 24, 1278, 51, 48, 239, 9))
     val res = sentencePieceTokenizer.decode(decodeIds)
-    print("Decoded String " + res(0).tokens(0).wordpiece)
-    print("From IDs " + res(0).tokens(0).token)
+    println("Decoded String " + res(0).tokens(0).wordpiece)
+    println("From IDs " + res(0).tokens(0).token)
 
   }
 

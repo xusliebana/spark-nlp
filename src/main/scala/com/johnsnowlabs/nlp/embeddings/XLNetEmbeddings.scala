@@ -112,7 +112,9 @@ class XLNetEmbeddings(override val uid: String) extends
   def tokenizeAndEncodeIds(sentences: Seq[Annotation]): Seq[WordpieceTokenizedSentence] = {
     val spModelPath = "/home/loan/Documents/JohnSnowLabs/XLNet/jupyter/SentencePiece/exported_model"
     val soOperationsPath = "/home/loan/venv/XLNET_jupyter_venv/lib/python2.7/site-packages/tf_sentencepiece/_sentencepiece_processor_ops.so.1.14.0"
-    val sentencePieceTokenizer = SentencePieceTokens.loadSavedModel(spModelPath, soOperationsPath, SparkNLP.start()) //Create Spiece Model
+    val dictPath = "/home/loan/Documents/JohnSnowLabs/Docs/PR/src/test/scala/com/johnsnowlabs/nlp/embeddings/768_xlnet_dict.txt"
+
+    val sentencePieceTokenizer = SentencePieceTokens.loadSavedModel(spModelPath, soOperationsPath, dictPath, SparkNLP.start()) //Create Spiece Model
 
 
     sentencePieceTokenizer.encode(sentences)

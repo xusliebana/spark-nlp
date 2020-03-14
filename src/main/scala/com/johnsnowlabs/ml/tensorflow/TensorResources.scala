@@ -71,36 +71,40 @@ class TensorResources {
 
 object TensorResources {
 
-  def calculateTensorSize(source: Tensor[_], size: Option[Int], isBytes: Boolean = false): Int = {
+  def calculateTensorSize(source: Tensor[_], size: Option[Int]): Int = {
 
-    if (isBytes) {
-      size.getOrElse {
-        // Calculate real size from tensor shape
-        val shape = source.shape()
-        shape.foldLeft(1l)(_ * _).toString.length
-      }
-    }
 
-    else {
-      size.getOrElse {
-        // Calculate real size from tensor shape
-        val shape = source.shape()
-        shape.foldLeft(1l)(_ * _).toInt
-      }
+    size.getOrElse {
+      // Calculate real size from tensor shape
+      val shape = source.shape()
+      shape.foldLeft(1l)(_ * _).toInt
     }
 
 
   }
 
   def extractInts(source: Tensor[_], size: Option[Int] = None): Array[Int] = {
-    val realSize = calculateTensorSize(source ,size)
+    val realSize = calculateTensorSize(source, size)
     val buffer = IntBuffer.allocate(realSize)
     source.writeTo(buffer)
     buffer.array()
   }
 
+  //used for getting Tensor Size of Tensors with Byte Output which are strings/characters
+  def calculateByteTensorSize(source: Tensor[_], size: Option[Int], maxTokenLength: Int): Int = {
+    print("debug")
+    size.getOrElse {
+      // Calculate real size from tensor shape
+      val amountOfTokens = source.shape()(1)
+      val res = amountOfTokens * maxTokenLength
+      res.toInt
+      //shape.foldLeft(1l)(_ * _).toString.length
+    }
+
+  }
+
   def extractLongs(source: Tensor[_], size: Option[Int] = None): Array[Long] = {
-    val realSize = calculateTensorSize(source ,size)
+    val realSize = calculateTensorSize(source, size)
     val buffer = LongBuffer.allocate(realSize)
     source.writeTo(buffer)
     buffer.array()
@@ -114,8 +118,8 @@ object TensorResources {
   }
 
   //used for extracting bytes/strings from tensors, like SentencePiece Decoding
-  def extractBytes(source: Tensor[_], size: Option[Int] = None, maxTokenLength: Int, amountOfTokens: Int): Array[Byte] = {
-    val realSize = calculateTensorSize(source, size, true) + 10000 // todo bugfi
+  def extractBytes(source: Tensor[_], size: Option[Int] = None, maxTokenLength: Int): Array[Byte] = {
+    val realSize = calculateByteTensorSize(source, size, maxTokenLength) //  + 10000 // todo bugfi
     val buffer = ByteBuffer.allocate(realSize)
     print("Size " + realSize)
 

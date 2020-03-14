@@ -139,8 +139,6 @@ class XLNetEmbeddings(override val uid: String) extends
       $(dimension),
       $(caseSensitive)
     )
-    print("debug")
-    //    }
     WordpieceEmbeddingsSentence.pack(embeddings)
 
   }
@@ -195,14 +193,10 @@ trait ReadXLNetTensorflowModel extends ReadTensorflowModel {
       savedModel.exists(),
       s"savedModel file saved_model.pb not found in folder $folder"
     )
-    print("laoding done in xlnet")
     val wrapper = TensorflowWrapper.read(folder, zipped = false, useBundle = true, tags = Array("serve"), initAllTables = true)
 
     val XLNet = new XLNetEmbeddings()
       .setModelIfNotSet(spark, wrapper)
-    print("lobject set done in xlnet")
-
-    print("loading suc!")
     XLNet
   }
 }

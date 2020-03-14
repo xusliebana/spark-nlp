@@ -69,7 +69,7 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
 
 
     val outs = runner.run().asScala
-    val ids = TensorResources.extractInts(outs(0)) // Depends on the fetch order!
+    val ids = Seq(TensorResources.extractInts(outs(0))) // Depends on the fetch order!
     //    val seq_lens = TensorResources.extractInts(outs(1))
 
     print("debug")
@@ -78,16 +78,31 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
     tensors.clearTensors()
     WordpieceTokenizedSentence
 
-    batch.zip(ids).map { case (sentence, id) =>
-      Array(TokenPiece(wordpiece = ids.mkString(","), //inefficient hack
-        token = "#",
-        pieceId = -1,
-        isWordStart = true,
-        begin = -1,
-        end = -1
-      ))
+    val res = ids.map { sentence =>
+      sentence.map {
+        tokenId =>
+          TokenPiece(wordpiece = idToTokenMap(tokenId),
+            token = idToTokenMap(tokenId),
+            pieceId = tokenId,
+            isWordStart = true,
+            begin = -1,
+            end = -1
+          )
+      }
+    }.map(sentenceTokenPieces => WordpieceTokenizedSentence(sentenceTokenPieces.toArray))
+    print("debug")
 
-    }.map(tokens => WordpieceTokenizedSentence(tokens))
+    res
+    //    batch.zip(ids).map { case (sentence, id) =>
+    //      Array(TokenPiece(wordpiece = ids.mkString(","), //inefficient hack
+    //        token = "#",
+    //        pieceId = -1,
+    //        isWordStart = true,
+    //        begin = -1,
+    //        end = -1
+    //      ))
+    //
+    //    }.map(tokens => WordpieceTokenizedSentence(tokens))
 
   }
 

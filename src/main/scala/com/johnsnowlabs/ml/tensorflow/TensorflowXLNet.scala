@@ -207,12 +207,10 @@ class TensorflowXLNet(val tensorflow: TensorflowWrapper,
 
 
   def encode(sentence: WordpieceTokenizedSentence, maxSentenceLength: Int): Array[Int] = {
-    //    val tokens = sentence.tokens.map(t => t.wordpiece.split(",").map(_.toInt)) //quick hack for string embedded tokens
     val sentenceStartTokenId = 1
-    val tokensStr = sentence.tokens.map(t => t.wordpiece) // .split(",").map(_.toInt)) //quick hack for string embedded tokens
-    val tokens = tokensStr.flatMap(t => t.split(",").map(_.toInt)) //quick hack for string embedded tokens
-
+    val tokens = sentence.tokens.map(_.pieceId)
     val sentenceEndTokenId = 2
+
     Array(sentenceStartTokenId) ++
       tokens ++
       Array(sentenceEndTokenId) ++

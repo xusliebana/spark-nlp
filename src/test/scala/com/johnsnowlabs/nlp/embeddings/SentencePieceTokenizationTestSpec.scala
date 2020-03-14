@@ -38,9 +38,10 @@ class SentencePieceTokenizationTestSpec extends FlatSpec {
 
 
     val decodeIds = Seq(Seq(8248, 29, 51, 24, 1278, 51, 48, 239, 9))
-    val res = sentencePieceTokenizer.decode(decodeIds)
-    println("Decoded String " + res(0).tokens(0).wordpiece)
-    println("From IDs " + res(0).tokens(0).token)
+    val decodedTokens = sentencePieceTokenizer.decode(decodeIds)
+    println("Decoded String " + decodedTokens(0).tokens.map(_.token).foldLeft("")(_ + _))
+
+    println("From IDs " + decodeIds)
 
   }
 

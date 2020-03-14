@@ -100,21 +100,34 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
     */
   def getTokensForIdsMapBased(batch: Seq[Seq[Int]]): Seq[WordpieceTokenizedSentence] = {
 
-    val decoded = batch.flatMap { sentence => sentence.map { token => idToTokenMap(token) } }
-
-
-    print("debug")
-
-    batch.zip(decoded).map { case (tokenId, tokenBytes) =>
-      Array(TokenPiece(wordpiece = decoded.toString(),
-        token = batch(0).mkString(","),
-        pieceId = -1,
-        isWordStart = true,
-        begin = -1,
-        end = -1
-      ))
-
-    }.map(tokens => WordpieceTokenizedSentence(tokens))
+    batch.map { sentence =>
+      sentence.map {
+        tokenId =>
+          TokenPiece(wordpiece = idToTokenMap(tokenId),
+            token = idToTokenMap(tokenId),
+            pieceId = tokenId,
+            isWordStart = true,
+            begin = -1,
+            end = -1
+          )
+      }
+    }.map(sentenceTokenPieces => WordpieceTokenizedSentence(sentenceTokenPieces.toArray))
+    //
+    //
+    //    print("debug")
+    //
+    //    batch.flatten.zip(decoded).map { case (tokenId, token) =>
+    //      Array(TokenPiece(wordpiece = decoded.toString(),
+    //        token = token,
+    //        pieceId =tokenId ,
+    //        isWordStart = true,
+    //        begin = -1,
+    //        end = -1
+    //      ))
+    //
+    //    }.map(tokens => WordpieceTokenizedSentence(tokens))
+    //
+    //    Seq[WordpieceTokenizedSentence]()
   }
 
 

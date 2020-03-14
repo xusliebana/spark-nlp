@@ -13,8 +13,8 @@ import scala.collection.JavaConverters._
 class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
                               batchSize: Int,
                               configProtoBytes: Option[Array[Byte]] = None,
-                              EOSToken: String = "[TODO]",
-                              maxTokenLength: Int = 25 // todo fix magic numbr
+                              maxTokenLength: Int = 25, // todo fix magic numbr
+                              idToTokenMap: scala.collection.mutable.Map[Int, String]
                              ) extends Serializable {
   //Todo make keys "module/node" pattern
   private val inputStringsKey = "sentenceInput"
@@ -89,6 +89,32 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
 
     }.map(tokens => WordpieceTokenizedSentence(tokens))
 
+  }
+
+
+  /**
+    * This function will tokenize each sentence and find the ID's for each of the tokens using a Sentence Piece model.
+    *
+    * @param batch The sentences Ids for which we calculate original string tokens
+    * @return The Embeddings Vector. For each Seq Element we have a Sentence, and for each sentence we have an Array for each of its words. Each of its words gets a float array to represent its Embeddings
+    */
+  def getTokensForIdsMapBased(batch: Seq[Seq[Int]]): Seq[WordpieceTokenizedSentence] = {
+
+    val decoded = batch.flatMap { sentence => sentence.map { token => idToTokenMap(token) } }
+
+
+    print("debug")
+
+    batch.zip(decoded).map { case (tokenId, tokenBytes) =>
+      Array(TokenPiece(wordpiece = decoded.toString(),
+        token = batch(0).mkString(","),
+        pieceId = -1,
+        isWordStart = true,
+        begin = -1,
+        end = -1
+      ))
+
+    }.map(tokens => WordpieceTokenizedSentence(tokens))
   }
 
 

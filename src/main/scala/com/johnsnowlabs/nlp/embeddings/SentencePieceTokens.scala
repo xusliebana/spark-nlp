@@ -54,7 +54,9 @@ class SentencePieceTokens(override val uid: String) extends AnnotatorModel[Sente
           new TensorflowSentencePiece(
             tensorflow,
             batchSize = 1,
-            configProtoBytes = getConfigProtoBytes
+            configProtoBytes = getConfigProtoBytes,
+            idToTokenMap = idToTokenMap
+
           )
         )
       )
@@ -81,7 +83,8 @@ class SentencePieceTokens(override val uid: String) extends AnnotatorModel[Sente
 
   def decode(sentenceIds: Seq[Seq[Int]]): Seq[WordpieceTokenizedSentence] = {
 
-    getModelIfNotSet.getTokensForIds(sentenceIds)
+    //    getModelIfNotSet.getTokensForIds(sentenceIds)
+    getModelIfNotSet.getTokensForIdsMapBased(sentenceIds)
 
 
   }
@@ -164,6 +167,7 @@ trait ReadSentencePieceTensorflowModel extends ReadTensorflowModel {
 
     bufferedSource.close
     SentencePieceTokens
+
   }
 }
 

@@ -148,12 +148,10 @@ trait ReadSentencePieceTensorflowModel extends ReadTensorflowModel {
 
     // this model is a STATIC graph and requires loading with custom ops!
     val wrapper = TensorflowWrapper.readWithCustomOps(folder, zipped = false, useBundle = true, tags = Array("serve"), initAllTables = true, soOperationsPath)
-    print("Making model")
 
     val SentencePieceTokens = new SentencePieceTokens()
       .setModelIfNotSet(spark, wrapper)
 
-    print("got model")
     SentencePieceTokens
   }
 }

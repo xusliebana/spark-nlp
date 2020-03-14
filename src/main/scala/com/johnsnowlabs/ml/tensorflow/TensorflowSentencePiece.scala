@@ -112,22 +112,7 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
           )
       }
     }.map(sentenceTokenPieces => WordpieceTokenizedSentence(sentenceTokenPieces.toArray))
-    //
-    //
-    //    print("debug")
-    //
-    //    batch.flatten.zip(decoded).map { case (tokenId, token) =>
-    //      Array(TokenPiece(wordpiece = decoded.toString(),
-    //        token = token,
-    //        pieceId =tokenId ,
-    //        isWordStart = true,
-    //        begin = -1,
-    //        end = -1
-    //      ))
-    //
-    //    }.map(tokens => WordpieceTokenizedSentence(tokens))
-    //
-    //    Seq[WordpieceTokenizedSentence]()
+
   }
 
 

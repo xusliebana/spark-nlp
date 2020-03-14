@@ -11,6 +11,8 @@ import org.apache.spark.ml.param.{IntArrayParam, IntParam, Param, ParamMap, Para
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import scala.io.Source
+
 
 // SENTENCE PIEC IS A TOKENIZE but also an ENCODER. SO what we call it lol.
 // Because WordpiecEncoder  is only an encoder
@@ -18,6 +20,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 class SentencePieceTokens(override val uid: String) extends AnnotatorModel[SentencePieceTokens]
   with WriteTensorflowModel
   with HasStorageRef {
+  val idToTokenMap = scala.collection.mutable.Map[Int, String]()
   val configProtoBytes = new IntArrayParam(this, "configProtoBytes", "ConfigProto from tensorflow, serialized into byte array. Get with config_proto.SerializeToString()")
   val task = new Param[String](this, "task", "set to 'encode' or 'decode' . Wether to ENCODE raw strings to tokends and ids or DECODE ids tos trings.   ")
   private var _model: Option[Broadcast[TensorflowSentencePiece]] = None
@@ -135,7 +138,7 @@ trait ReadSentencePieceTensorflowModel extends ReadTensorflowModel {
 
   addReader(readTensorflow)
 
-  def loadSavedModel(folder: String, soOperationsPath: String, spark: SparkSession): SentencePieceTokens = {
+  def loadSavedModel(folder: String, soOperationsPath: String, dictionaryPath: String, spark: SparkSession): SentencePieceTokens = {
 
     val f = new File(folder)
     val savedModel = new File(folder, "saved_model.pb")
@@ -152,6 +155,14 @@ trait ReadSentencePieceTensorflowModel extends ReadTensorflowModel {
     val SentencePieceTokens = new SentencePieceTokens()
       .setModelIfNotSet(spark, wrapper)
 
+
+    //initialize Dictionary map
+    val bufferedSource = Source.fromFile(dictionaryPath)
+    for ((line, i) <- bufferedSource.getLines.zipWithIndex) {
+      SentencePieceTokens.idToTokenMap += (i -> line.split("\t")(0))
+    }
+
+    bufferedSource.close
     SentencePieceTokens
   }
 }

@@ -42,6 +42,8 @@ class SentencePieceTokenizationTestSpec extends FlatSpec {
     println("Decoded String " + decodedTokens(0).tokens.map(_.token).foldLeft("")(_ + _))
 
     println("From IDs " + decodeIds)
+    println("Decoded String " + decodedTokens(0).tokens.map(_.pieceId).map(_.toString).mkString(","))
+
 
   }
 

@@ -14,13 +14,14 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
                               batchSize: Int,
                               configProtoBytes: Option[Array[Byte]] = None,
                               EOSToken: String = "[TODO]",
-                              maxTokenLength: Int = 100
+                              maxTokenLength: Int = 25 // todo fix magic numbr
                              ) extends Serializable {
-  private val inputStringsKey = "module/input_ids"
-  private val outputIdsKey = "module/input_ids"
+  //Todo make keys "module/node" pattern
+  private val inputStringsKey = "sentenceInput"
+  private val outputIdsKey = "ids"
   private val outputSeqLenKey = "module/input_ids"
-  private val inputIdsKey = "module/input_ids"
-  private val outputTokensKey = "module/input_ids"
+  private val inputIdsKey = "tokensInput"
+  private val outputTokensKey = "tokensOut"
 
   /**
     * Calculate the embeddings for a sequence of Tokens and create WordPieceEmbeddingsSentence objects from them
@@ -62,9 +63,9 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
     val runner = tensorflow.getSession(configProtoBytes = configProtoBytes).runner
 
     runner
-      .feed("sentenceInput", sentenceTensors)
-      .fetch("ids")
-    //      .fetch("seq_len")  we can remove ths  by just getting the length in java..
+      .feed(inputStringsKey, sentenceTensors)
+      .fetch(outputIdsKey)
+    //      .fetch(outputSeqLenKey)  we can remove ths  by just getting the length in java..
 
 
     val outs = runner.run().asScala
@@ -111,14 +112,13 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
     val runner = tensorflow.getSession(configProtoBytes = configProtoBytes).runner
 
     runner
-      .feed("tokensInput", sentenceTensors)
-      .fetch("tokensOut")
+      .feed(inputIdsKey, sentenceTensors)
+      .fetch(outputTokensKey)
     //      .fetch("seq_len")  we can remove ths  by just getting the length in java..
 
 
     val outs = runner.run().asScala
-    val amountOftokens = 1000
-    val tokensBytes = TensorResources.extractBytes(outs(0), maxTokenLength = maxTokenLength, amountOfTokens = amountOftokens) // Depends on the fetch order!
+    val tokensBytes = TensorResources.extractBytes(outs(0), maxTokenLength = maxTokenLength) // Depends on the fetch order!
     //    val seq_lens = TensorResources.extractInts(outs(1))
     val string = new String(tokensBytes, "UTF-8");
 

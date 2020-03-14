@@ -1,22 +1,11 @@
 package com.johnsnowlabs.ml.tensorflow
-
-import com.johnsnowlabs.nlp.annotators.common.WordpieceTokenized.annotatorType
-import com.johnsnowlabs.nlp.{Annotation, AnnotatorType}
 import com.johnsnowlabs.nlp.annotators.common._
-
 import scala.collection.JavaConverters._
-import scala.collection.Map
 
 /**
   * This class is used to calculate ELMO embeddings for For Sequence Batches of TokenizedSentences.
   *
-  * https://tfhub.dev/google/elmo/3
-  * * word_emb: the character-based word representations with shape [batch_size, max_length, 512].  == word_emb
-  * * lstm_outputs1: the first LSTM hidden state with shape [batch_size, max_length, 1024]. === lstm_outputs1
-  * * lstm_outputs2: the second LSTM hidden state with shape [batch_size, max_length, 1024]. === lstm_outputs2
-  * * elmo: the weighted sum of the 3 layers, where the weights are trainable. This tensor has shape [batch_size, max_length, 1024]  == elmo
-  *
-  * @param tensorflow       Elmo Model wrapper with TensorFlow Wrapper
+  * @param tensorflow       SentencePiece Model wrapper with TensorFlow Wrapper
   * @param batchSize        size of batch
   * @param configProtoBytes Configuration for TensorFlow session
   */
@@ -27,6 +16,11 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
                               EOSToken: String = "[TODO]",
                               maxTokenLength: Int = 100
                              ) extends Serializable {
+  private val inputStringsKey = "module/input_ids"
+  private val outputIdsKey = "module/input_ids"
+  private val outputSeqLenKey = "module/input_ids"
+  private val inputIdsKey = "module/input_ids"
+  private val outputTokensKey = "module/input_ids"
 
   /**
     * Calculate the embeddings for a sequence of Tokens and create WordPieceEmbeddingsSentence objects from them
@@ -135,7 +129,7 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
     WordpieceTokenizedSentence
 
     val res = batch.zip(Seq(tokensBytes)).map { case (tokenId, tokenBytes) =>
-      Array(TokenPiece(wordpiece = new String(tokensBytes, "UTF-8"), // "lol".mkString(","), //inefficient hack
+      Array(TokenPiece(wordpiece = new String(tokensBytes, "UTF-8"),
         token = batch(0).mkString(","),
         pieceId = -1,
         isWordStart = true,

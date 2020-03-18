@@ -13,8 +13,9 @@ class AlbertEmbeddingsTestSpec extends FlatSpec {
   "Albert Embeddings" should "generate annotations" in {
     System.out.println("Working Directory = " + System.getProperty("user.dir"))
     val data = Seq(
-      "I like pancakes in the summer. I hate ice cream in winter.",
-      "If I had asked people what they wanted, they would have said faster horses"
+      "i like burger",
+      "if it looks like a duck, swims like a duck, and quacks like a duck, then it probably is a duck",
+      "we can only see a short distance ahead but we can see plenty there that needs to be done"
     ).toDF("text")
 
     val albert_model_path = "/home/loan/Documents/JohnSnowLabs/spark-nlp-training/python/tensorflow/albert/exported_albert/albert/content/AlbertModel"
@@ -28,12 +29,11 @@ class AlbertEmbeddingsTestSpec extends FlatSpec {
 
     val xlnetSavedModel = AlbertEmbeddings.loadSavedModel(albert_model_path, SparkNLP.start())
       .setBatchSize(2)
-      .setPoolingLayer("word_emb")
+      .setPoolingLayer("token_embeddings")
       .setInputCols(Array("document"))
       .setOutputCol("embeddings")
 
 
-    print("GOT ALBERT!!")
     xlnetSavedModel.write.overwrite().save("./tmp_albert_tf")
 
     val embeddings = AlbertEmbeddings.load("./tmp_albert_tf")

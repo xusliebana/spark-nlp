@@ -19,7 +19,7 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
   //Todo make keys "module/node" pattern
   private val inputStringsKey = "sentenceInput"
   private val outputIdsKey = "ids"
-  private val outputSeqLenKey = "module/input_ids"
+  private val outputSeqLenKey = "seq_len"
   private val inputIdsKey = "tokensInput"
   private val outputTokensKey = "tokensOut"
 
@@ -53,7 +53,6 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
 
     val tensors = new TensorResources()
 
-    /* Actual size of each sentence to skip padding in the TF model */
 
     val sentencesBytes = batch.map { sentence =>
       sentence.getBytes("UTF-8")
@@ -78,7 +77,7 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
     tensors.clearTensors()
     WordpieceTokenizedSentence
 
-    val res = ids.map { sentence =>
+    ids.map { sentence =>
       sentence.map {
         tokenId =>
           TokenPiece(wordpiece = idToTokenMap(tokenId),
@@ -90,19 +89,6 @@ class TensorflowSentencePiece(val tensorflow: TensorflowWrapper,
           )
       }
     }.map(sentenceTokenPieces => WordpieceTokenizedSentence(sentenceTokenPieces.toArray))
-    print("debug")
-
-    res
-    //    batch.zip(ids).map { case (sentence, id) =>
-    //      Array(TokenPiece(wordpiece = ids.mkString(","), //inefficient hack
-    //        token = "#",
-    //        pieceId = -1,
-    //        isWordStart = true,
-    //        begin = -1,
-    //        end = -1
-    //      ))
-    //
-    //    }.map(tokens => WordpieceTokenizedSentence(tokens))
 
   }
 

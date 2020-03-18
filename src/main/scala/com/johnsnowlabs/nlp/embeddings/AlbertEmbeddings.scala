@@ -50,22 +50,17 @@ class AlbertEmbeddings(override val uid: String) extends
 
   def setConfigProtoBytes(bytes: Array[Int]): AlbertEmbeddings.this.type = set(this.configProtoBytes, bytes)
 
-  /** Function used to set the embedding output layer of the ELMO model
-    * word_emb: the character-based word representations with shape [batch_size, max_length, 512].  == word_emb
-    * lstm_outputs1: the first LSTM hidden state with shape [batch_size, max_length, 1024]. === lstm_outputs1
-    * lstm_outputs2: the second LSTM hidden state with shape [batch_size, max_length, 1024]. === lstm_outputs2
-    * elmo: the weighted sum of the 3 layers, where the weights are trainable. This tensor has shape [batch_size, max_length, 1024]  == elmo
+  /** Function used to set the embedding output layer of the ALBERT model. See https://tfhub.dev/google/albert_xlarge/3 for reference.
+    * * pooled_output: pooled output of the entire sequence with shape [batch_size, hidden_size].
+    * * sequence_output: representations of every token in the input sequence with shape [batch_size, max_sequence_length, hidden_size].
     *
     * @param layer Layer specification
     */
   def setPoolingLayer(layer: String): this.type = {
     layer match {
-      case "word_emb" => set(poolingLayer, "word_emb")
-      case "lstm_outputs1" => set(poolingLayer, "lstm_outputs1")
-      case "lstm_outputs2" => set(poolingLayer, "lstm_outputs2")
-      case "elmo" => set(poolingLayer, "elmo")
-
-      case _ => throw new MatchError("poolingLayer must be either word_emb, lstm_outputs1, lstm_outputs2, or elmo")
+      case "sentence_embeddings" => set(poolingLayer, "pooled_output")
+      case "token_embeddings" => set(poolingLayer, "sequence_output")
+      case _ => throw new MatchError("poolingLayer must be either pooled_output or sequence_output")
     }
   }
 
@@ -110,10 +105,17 @@ class AlbertEmbeddings(override val uid: String) extends
     * @return
     */
   def tokenizeAndEncodeIds(sentences: Seq[Annotation]): Seq[WordpieceTokenizedSentence] = {
+    // The SP model will look for a spiece.model file in the ROOT of the spark-nlp project.
+    // The SP  file can be downoaded from [URL] (its named 30k-clean.model, you have to rename it to spiece.model
+    // The dict and soOperatiosnPath can be an absolute path on the system
+
+
+    // The Sentence Piece model can be re-used for different models. You just have to swap the spiece.model file in the root of spark-nlp project
     val spModelPath = "/home/loan/Documents/JohnSnowLabs/XLNet/jupyter/SentencePiece/exported_model"
     val soOperationsPath = "/home/loan/venv/XLNET_jupyter_venv/lib/python2.7/site-packages/tf_sentencepiece/_sentencepiece_processor_ops.so.1.14.0"
-    val dictPath = "/home/loan/Documents/JohnSnowLabs/Docs/PR/src/test/scala/com/johnsnowlabs/nlp/embeddings/768_xlnet_dict.txt"
-
+    //    val dictPath = "/home/loan/Documents/JohnSnowLabs/Docs/PR/src/test/scala/com/johnsnowlabs/nlp/embeddings/768_xlnet_dict.txt"
+    //    val spModelPath = "/home/loan/Documents/JohnSnowLabs/spark-nlp-training/python/tensorflow/albert/albert_base_v2/albert_base"
+    val dictPath = "/home/loan/Documents/JohnSnowLabs/spark-nlp-training/python/tensorflow/albert/albert_base_v2/albert_base/30k-clean.vocab"
     val sentencePieceTokenizer = SentencePieceTokens.loadSavedModel(spModelPath, soOperationsPath, dictPath, SparkNLP.start()) //Create Spiece Model
 
 
@@ -133,9 +135,9 @@ class AlbertEmbeddings(override val uid: String) extends
     //    if(tokenizedSentences.nonEmpty) {
     val embeddings = getModelIfNotSet.calculateEmbeddings(
       tokenizedSentences,
-      0,
+      "token_embeddings",
       $(batchSize),
-      23,
+      100,
       $(dimension),
       $(caseSensitive)
     )

@@ -5,9 +5,10 @@ import com.johnsnowlabs.nlp.annotators.common._
 import scala.collection.JavaConverters._
 
 /**
-  * This class is used to calculate ELMO embeddings for For Sequence Batches of TokenizedSentences.
+  * This class is used to calculate ALBERT embeddings for For Sequence Batches of WordpieceTokenizedSentence.
+  * Input for this model must be tokenzied with a SentencePieceModel,
   *
-  * https://tfhub.dev/google/elmo/3
+  * This Tensorflow model is using the weights provided by https://tfhub.dev/google/albert_xlarge/3
   * * pooled_output: pooled output of the entire sequence with shape [batch_size, hidden_size].
   * * sequence_output: representations of every token in the input sequence with shape [batch_size, max_sequence_length, hidden_size].
   *
@@ -22,21 +23,23 @@ class TensorflowAlbert(val tensorflow: TensorflowWrapper,
                       ) extends Serializable {
 
 
-  // keys representing the input tensors of the XLNET model
+  // keys representing the input and output tensors of the ALBERT model
+
   private val tokenIdsKey = "module/input_ids"
   private val maskIdsKey = "module/input_mask"
   private val segmentIdsKey = "module/segment_ids"
   private val outputSequenceKey = "module/seq_out"
+  private val outputPooledKey = "module/pooled_out"
 
   /**
     * Calculate the embeddings for a sequence of Tokens and create WordPieceEmbeddingsSentence objects from them
     *
     * @param sentences    A sequence of Tokenized Sentences for which embeddings will be calculated
-    * @param poolingLayer Define which output layer you want from the model word_emb, lstm_outputs1, lstm_outputs2, elmo. See https://tfhub.dev/google/elmo/3 for reference
+    * @param poolingLayer Define which output layer you want from the model pooled_output or sequence_output. https://tfhub.dev/google/albert_xlarge/3 for reference
     * @return A Seq of WordpieceEmbeddingsSentence, one element for each input sentence
     */
   def calculateEmbeddings(sentences: Seq[WordpieceTokenizedSentence],
-                          poolingLayer: Int,
+                          poolingLayer: String,
                           batchSize: Int,
                           maxSentenceLength: Int,
                           dimension: Int,
@@ -44,102 +47,125 @@ class TensorflowAlbert(val tensorflow: TensorflowWrapper,
                          ): Seq[WordpieceEmbeddingsSentence] = {
 
     /*Run embeddings calculation by batches*/
-    print("yo")
-    //    sentences.zipWithIndex.grouped(batchSize).map{ batch =>
-    //      val encoded = batch.map(s => encode(s._1, maxSentenceLength))
-    //      val vectors = tag(encoded, extractPoolingLayer(poolingLayer, dimension), maxSentenceLength)
-    //
-    //    }
     sentences.zipWithIndex.grouped(batchSize).flatMap { batch =>
 
+      // Encode batches with sentence end and start token id
       val encoded = batch.map(s => encode(s._1, maxSentenceLength))
 
-      val vectors = tag(encoded, extractPoolingLayer(poolingLayer, dimension), maxSentenceLength)
+      // Calculate Embeddings with the Albert model
+      val vectors = tag(encoded, extractPoolingLayer(poolingLayer), maxSentenceLength)
 
-      print("debug")
+
+      // Wrap our result with internal Spark-NLP WordpieceEmbeddingsSentence Case Class Data structure
       batch.zip(vectors).map { case (sentence, tokenVectors) =>
         sentences.length
-        val tokenLength = 23 // quick fix because all tokens are in onesentence._1.tokens.length
 
-        /*All wordpiece embeddings*/
+        val tokenLength = sentence._1.tokens.length
+
+
+        // We remove first and last because they are sentence end/start Id's
         val tokenEmbeddings = tokenVectors.slice(1, tokenLength + 1)
 
-        // TODO use SentencePieceEmbeddings HERE
-        val tokensWithEmbeddings = sentence._1.tokens.zip(tokenEmbeddings).flatMap {
+        // Create internal Spark-NLP TokenPieceEmbeddings Data structure
+        val tokensWithEmbeddings = sentence._1.tokens.zip(tokenEmbeddings).map {
           case (token, tokenEmbedding) =>
-            val tokenWithEmbeddings = TokenPieceEmbeddings(token, tokenEmbedding)
-            val originalTokensWithEmbeddings = Seq(tokenWithEmbeddings)
-            originalTokensWithEmbeddings
+            TokenPieceEmbeddings(
+              token.token,
+              token.token,
+              -1,
+              isWordStart = true,
+              isOOV = false,
+              tokenEmbedding,
+              token.begin,
+              token.end
+            )
+
         }
 
+        // Create internal Spark-NLP WordpieceEmbeddingsSentence Data structure
         WordpieceEmbeddingsSentence(tokensWithEmbeddings, sentence._2)
       }
     }.toSeq
 
 
+
   }
 
   /**
-    * Tag a seq of TokenizedSentences, will get the embeddings according to key.
+    * Tags a seq of TokenizedSentences, will get the embeddings according to key.
     *
     * @param batch         The Tokens for which we calculate embeddings
-    * @param embeddingsKey Specification of the output embedding for Elmo
-    * @param dimension     Elmo's embeddings dimension: either 512 or 1024
+    * @param embeddingsKey Specification of the output embedding for Albert
     * @return The Embeddings Vector. For each Seq Element we have a Sentence, and for each sentence we have an Array for each of its words. Each of its words gets a float array to represent its Embeddings
     */
   def tag(batch: Seq[Array[Int]], embeddingsKey: String, maxSentenceLength: Int): Seq[Array[Array[Float]]] = {
+
+    // Create Tensor Resources for every input Tensor
     val tensors = new TensorResources()
     val tensorsMasks = new TensorResources()
     val tensorsSegments = new TensorResources()
 
+
+    // Create Buffers for every Tensor Resource
     val tokenBuffers = tensors.createIntBuffer(batch.length * maxSentenceLength)
     val maskBuffers = tensorsMasks.createIntBuffer(batch.length * maxSentenceLength)
-
     val segmentBuffers = tensorsSegments.createIntBuffer(batch.length * maxSentenceLength)
 
+
+    // Put the data into the buffers
     val shape = Array(batch.length.toLong, maxSentenceLength)
-    val sentenceEndTokenId = 2
     batch.map { sentence =>
       if (sentence.length > maxSentenceLength) {
-        tokenBuffers.put(sentence.take(maxSentenceLength)) //remove last token, add end token
-        maskBuffers.put(sentence.take(maxSentenceLength).map(x => if (x == 0) 0 else 0)) //requried float cast..
+        tokenBuffers.put(sentence.take(maxSentenceLength))
+        maskBuffers.put(sentence.take(maxSentenceLength).map(x => if (x == 0) 0 else 0))
         segmentBuffers.put(Array.fill(maxSentenceLength)(0))
       }
       else {
         tokenBuffers.put(sentence)
-        maskBuffers.put(sentence.map(x => 1)) // if (x == 0.0.toFloat) 0.0.toFloat else 1.0.toFloat))
+        maskBuffers.put(sentence.map(x => 1))
         segmentBuffers.put(Array.fill(maxSentenceLength)(1))
       }
     }
 
+    // Flip the buffers
     tokenBuffers.flip()
     maskBuffers.flip()
     segmentBuffers.flip()
 
+    // Get TF Session
     val runner = tensorflow.getTFHubSession(configProtoBytes = configProtoBytes).runner
 
+    // Create tensors containing the buffer values
     val tokenTensors = tensors.createIntBufferTensor(shape, tokenBuffers)
     val maskTensors = tensorsMasks.createIntBufferTensor(shape, maskBuffers)
     val segmentTensors = tensorsSegments.createIntBufferTensor(shape, segmentBuffers)
-    // -0.3152 . -0.1753, 0.03, =0,07, -0.27, -0.47503
+
+    // Feed the tensors to the model and fetch the output
+    // We are adding the _1 to the key, because they seem overloaded and Tensorflow must have internally added the _1 suffix
     runner
-      .feed(tokenIdsKey, tokenTensors)
+      //      .feed(tokenIdsKey, tokenTensors)
       .feed(tokenIdsKey + "_1", tokenTensors)
 
-      .feed(maskIdsKey, maskTensors)
+      //      .feed(maskIdsKey, maskTensors)
       .feed(maskIdsKey + "_1", maskTensors)
 
-      .feed(segmentIdsKey, segmentTensors)
+      //      .feed(segmentIdsKey, segmentTensors)
       .feed(segmentIdsKey + "_1", segmentTensors)
-      .fetch(outputSequenceKey)
-    //
-    val outs = runner.run().asScala
 
+      .fetch(embeddingsKey)
+
+
+    // Get the model outputs
+    val outs = runner.run().asScala
     val embeddings = TensorResources.extractFloats(outs.head)
-    //
+
+    // Deallocate TF Session
     tensors.clearSession(outs)
     tensors.clearTensors()
     tokenBuffers.clear()
+
+
+    // Prepare Output
 
     val dim = embeddings.length / (batch.length * maxSentenceLength)
     val shrinkedEmbeddings: Array[Array[Array[Float]]] = embeddings.grouped(dim).toArray.grouped(maxSentenceLength).toArray
@@ -158,54 +184,47 @@ class TensorflowAlbert(val tensorflow: TensorflowWrapper,
 
   }
 
-  /**
-    * word_emb: the character-based word representations with shape [batch_size, max_length, 512].  == 512
-    * lstm_outputs1: the first LSTM hidden state with shape [batch_size, max_length, 1024]. === 1024
-    * lstm_outputs2: the second LSTM hidden state with shape [batch_size, max_length, 1024]. === 1024
-    * elmo: the weighted sum of the 3 layers, where the weights are trainable. This tensor has shape [batch_size, max_length, 1024]  == 1024
+  /** The dimensionality of the output Embeddings
+    * * pooled_output: pooled output of the entire sequence with shape [batch_size, hidden_size].
+    * * sequence_output: representations of every token in the input sequence with shape [batch_size, max_sequence_length, hidden_size].
     *
     * @param layer Layer specification
     * @return The dimension of chosen layer
     */
   def getDimensions(layer: String): Int = {
-    {
+    { // TODO get this right for the different types of models..
       layer match {
-        case "word_emb" =>
-          512
-        case "lstm_outputs1" =>
-          1024
-        case "lstm_outputs2" =>
-          1024
-        case "elmo" =>
-          1024
+        case "pooled_output" =>
+          2048
+        case "sequence_output" =>
+          2048
       }
     }
   }
 
-  def extractPoolingLayer(layer: Int, dimension: Int): String = {
-    val bertLayer = if (dimension == 768) {
-      layer match {
-        case -1 =>
-          "module/bert/encoder/Reshape_13:0"
-        case -2 =>
-          "module/bert/encoder/Reshape_12:0"
-        case 0 =>
-          "module/bert/encoder/Reshape_1:0"
-      }
-    } else {
-      layer match {
-        case -1 =>
-          "module/bert/encoder/Reshape_25:0"
-        case -2 =>
-          "module/bert/encoder/Reshape_24:0"
-        case 0 =>
-          "module/bert/encoder/Reshape_1:0"
-      }
+  /**
+    * Handy acess function for getting the name of the pooling layers
+    *
+    * @param layer The pooling layer for which the name is requested
+    * @return The name of the pooling layer
+    */
+  def extractPoolingLayer(layer: String): String = {
+    layer match {
+      case "sentence_embeddings" =>
+        outputPooledKey
+      case "token_embeddings" =>
+        outputSequenceKey
     }
-    bertLayer
   }
 
-
+  /**
+    * Encode a  tokenized sentence containing token-ids  which is represented as WordpieceTokenizedSentence as sentence for the Albert model.
+    * This function makes sure every sentence is not longer than maxSentenceLength and also adds the start/end token-ids at the end and beginning of each token for the Albert model.
+    *
+    * @param sentence          The tokenized sentence containing token-ids which is represented as WordpieceTokenizedSentence
+    * @param maxSentenceLength Maximum allowed length for sentences. Sentences longer than  @param maxSentenceLength will be trimmed.
+    * @return The input sentences encodes as Array[Int], ready for Albert consumption.
+    */
   def encode(sentence: WordpieceTokenizedSentence, maxSentenceLength: Int): Array[Int] = {
     val sentenceStartTokenId = 1
     val tokens = sentence.tokens.map(_.pieceId)

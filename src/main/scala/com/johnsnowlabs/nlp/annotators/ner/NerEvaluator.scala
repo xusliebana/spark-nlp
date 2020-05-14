@@ -1,4 +1,6 @@
 package com.johnsnowlabs.nlp.annotators.ner
+import java.util.ArrayList
+
 import com.johnsnowlabs.nlp.util.io.ResourceHelper
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -91,6 +93,11 @@ object NerEvaluator {
     (averagesMap, entitiesMap, entityMetricsDf)
   }
 
+  //the following is for handling java values that are passed when using py4j
+  def evaluateNer(spark: org.apache.spark.sql.SparkSession, ground_truth: ArrayList[java.lang.String], predictions: ArrayList[java.lang.String], percent: java.lang.Boolean, outputDf: java.lang.Boolean, mode: java.lang.String):
+  (Map[String, (Any, Any, Float)], Map[String, (Float, Float, Float, Int)], Option[DataFrame])= {
+    evaluateNer(spark, ground_truth.toArray.toSeq.asInstanceOf[Seq[String]], predictions.toArray.toSeq.asInstanceOf[Seq[String]], percent, outputDf, mode)
+  }
 
 
 }

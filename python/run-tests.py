@@ -42,4 +42,6 @@ unittest.TextTestRunner().run(ElmoEmbeddingsTestSpec())
 # Misc tests
 unittest.TextTestRunner().run(UtilitiesTestSpec())
 unittest.TextTestRunner().run(SerializersTestSpec())
+unittest.TextTestRunner().run(NerEvaluatorTestSpec())
+
 

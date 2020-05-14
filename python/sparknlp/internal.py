@@ -239,6 +239,10 @@ class _CoNLLGeneratorExport(ExtendedJavaWrapper):
         else:
             super(_CoNLLGeneratorExport, self).__init__("com.johnsnowlabs.util.CoNLLGenerator.exportConllFiles", spark._jsparkSession, target, pipeline, output_path)
 
+class _NerEvaluatorEvaluate(ExtendedJavaWrapper):
+    def __init__(self, spark, ground_truth, predictions, percent, outputDf, mode):
+        i = super(_NerEvaluatorEvaluate, self).__init__("com.johnsnowlabs.nlp.annotators.ner.NerEvaluator.evaluateNer", spark._jsparkSession, ground_truth  , predictions, percent, outputDf, mode)
+        return i
 
 class _EmbeddingsOverallCoverage(ExtendedJavaWrapper):
     def __init__(self, dataset, embeddings_col):

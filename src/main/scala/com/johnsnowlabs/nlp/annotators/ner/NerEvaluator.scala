@@ -1,6 +1,4 @@
 package com.johnsnowlabs.nlp.annotators.ner
-import java.util
-
 import com.johnsnowlabs.nlp.util.io.ResourceHelper
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
@@ -10,15 +8,15 @@ object NerEvaluator {
   //TODO: py4j
   //TODO: extend internal eval module
 
-
-
   def evaluateNer(spark: SparkSession = ResourceHelper.spark, ground_truth: Seq[String], predictions: Seq[String], percent:Boolean=true, outputDf:Boolean=false, mode: String = "entity_level"):
   (Map[String, (Any, Any, Float)], Map[String, (Float, Float, Float, Int)], Option[DataFrame])={
     //get seq of ground truth, seq of prediction
     //creates Map with avg precision, recall, f1
-    //creates df with entity, precision, recall, f1, support
-    //returns a tuple of (map, df)
+    //creates Map with entity, precision, recall, f1, support
+    //if outputDf==true, creates df with entity, precision, recall, f1, support
+    //returns a tuple of (Map, Map, option[df])
     //if mode==entity_level, remove O and I- and B- tags
+    //if percent==true, uses percents instead of decimals i
 
     val entitiesNeedMetrics = if (mode == "entity_level") ground_truth.map(ent => ent.split("-").last) else ground_truth
     val predictionsCleaned = if (mode == "entity_level") predictions.map(ent => ent.split("-").last) else predictions
@@ -87,13 +85,13 @@ object NerEvaluator {
     (averagesMap, entitiesMap, entityMetricsDf)
   }
 
-  def evaluateNer(spark: org.apache.spark.sql.SparkSession, ground_truth: util.ArrayList[java.lang.String], predictions: util.ArrayList[java.lang.String], percent: java.lang.Boolean, outputDf: java.lang.Boolean, mode: java.lang.String):
-  //(Map[String, (Any, Any, Float)], Map[String, (Float, Float, Float, Int)], Option[DataFrame])= {
-  String={
-    //val a = evaluateNer(spark, ground_truth.toArray.toSeq.asInstanceOf[Seq[String]], predictions.toArray.toSeq.asInstanceOf[Seq[String]], percent, outputDf, mode)
-
-    "apples"
-  }
+//  def evaluateNer(spark: org.apache.spark.sql.SparkSession, ground_truth: util.ArrayList[java.lang.String], predictions: util.ArrayList[java.lang.String], percent: java.lang.Boolean, outputDf: java.lang.Boolean, mode: java.lang.String):
+//  //(Map[String, (Any, Any, Float)], Map[String, (Float, Float, Float, Int)], Option[DataFrame])= {
+//  String={
+//    //val a = evaluateNer(spark, ground_truth.toArray.toSeq.asInstanceOf[Seq[String]], predictions.toArray.toSeq.asInstanceOf[Seq[String]], percent, outputDf, mode)
+//
+//    "apples"
+//  }
 
 
 }

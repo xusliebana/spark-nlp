@@ -23,4 +23,23 @@ class NerEvaluatorTestSpec extends FlatSpec{
     assert(outputRow.equals(expectedRow))
   }
 
+  "NerEvaluator.evaluateNer" should "work for all parameters" in {
+    val defaultExample = NerEvaluator.evaluateNer(ResourceHelper.spark, ground_truth, predictions)
+    print("default example (no output df, mode is entity level so we are removing IOB tagging, and we are using proportions instead of percentages):\n")
+    print("overall (precision, recall, f1) for each method of averaging: " + defaultExample._1 + "\n")
+    print("(precision, recall, f1, support) for each label: " + defaultExample._2+ "\n")
+    print("dataframe (None because we didn't do the outputDf flag): " + defaultExample._3+ "\n")
+
+    print("\n")
+    val percentTokenAndDfExample = NerEvaluator.evaluateNer(ResourceHelper.spark, ground_truth, predictions, percent = true, outputDf = true, mode = "token_level")
+    print("percent=true, mode='token_level', and outputDf=true example:\n")
+    print("overall (precision, recall, f1) for each method of averaging: " + percentTokenAndDfExample._1+ "\n")
+    print("(precision, recall, f1, support) for each label: " + percentTokenAndDfExample._2+ "\n")
+    print("dataframe for labels: \n")
+    percentTokenAndDfExample._3.get.show(10)
+    print("Recall for Location: "  + percentTokenAndDfExample._2.getOrElse("B-Location", (0,0,0,0)).asInstanceOf[(Float, Float, Float, Int)]._2.toString + "\n")
+    print("Overall Micro f1: "  + percentTokenAndDfExample._1.getOrElse( "micro", (0,0,0)).asInstanceOf[(Float, Float, Float)]._3.toString + "\n")
+  }
+
+
 }

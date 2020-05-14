@@ -1,7 +1,7 @@
 package com.johnsnowlabs.nlp.annotators.ner
 
 import com.johnsnowlabs.nlp.util.io.ResourceHelper
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Row
 import org.scalatest.FlatSpec
 
 class NerEvaluatorTestSpec extends FlatSpec{
@@ -11,16 +11,16 @@ class NerEvaluatorTestSpec extends FlatSpec{
   val predictions = Seq("I-HormonalTherapy", "B-TestResult", "B-TestResult", "B-Location", "B-Location", "B-CancerDx", "B-CancerDx", "I-HormonalTherapy", "I-HormonalTherapy", "B-Age", "B-Location", "O", "B-TestResult", "I-PlanHeader", "B-Location", "B-TestResult", "B-Location", "B-TestResult", "B-CancerDx", "B-Location", "B-Location", "B-CancerDx", "I-PlanHeader", "B-UnspecificTherapy", "B-UnspecificTherapy", "I-HormonalTherapy", "B-UnspecificTherapy", "I-PlanHeader", "B-CancerDx", "B-UnspecificTherapy", "I-PlanHeader", "B-Location", "B-Age", "B-CancerDx", "B-CancerDx", "B-TestResult", "B-Age", "B-UnspecificTherapy", "I-HormonalTherapy", "I-HormonalTherapy", "I-HormonalTherapy", "O", "I-PlanHeader", "O", "B-Location", "B-Location", "B-TestResult", "B-UnspecificTherapy", "B-CancerDx", "B-CancerDx", "I-HormonalTherapy", "B-UnspecificTherapy", "B-Age", "O", "B-TestResult", "I-PlanHeader", "B-TestResult", "I-PlanHeader", "I-PlanHeader", "I-PlanHeader", "B-TestResult", "B-TestResult", "I-HormonalTherapy", "I-HormonalTherapy", "B-UnspecificTherapy", "I-HormonalTherapy", "I-PlanHeader", "I-HormonalTherapy", "B-Location", "I-HormonalTherapy", "B-Age", "B-CancerDx", "O", "B-UnspecificTherapy", "B-TestResult", "O", "O", "B-TestResult", "I-HormonalTherapy", "O", "B-TestResult", "B-Age", "B-CancerDx", "B-TestResult", "B-Age", "B-UnspecificTherapy", "I-HormonalTherapy", "I-HormonalTherapy", "O", "O", "B-CancerDx", "B-Age", "B-Location", "I-PlanHeader", "I-HormonalTherapy", "B-TestResult", "B-Location", "B-Age", "I-HormonalTherapy", "B-Age")
 
   "NerEvaluator.evaluateNer" should "create a valid Map" in {
-    val getOutput = NerEvaluator.evaluateNer(ResourceHelper.spark, ground_truth, predictions)
-    val expectedMap = Map("accuracy" -> (None,None,19.101124.toFloat), "micro" -> (18.88889.toFloat,19.101124.toFloat,18.994415.toFloat), "macro" -> (18.344017.toFloat,17.61905.toFloat,17.61905.toFloat), "weighted" -> (20.710169.toFloat, 19.101124.toFloat, 19.328587.toFloat))
-    assert (expectedMap.equals(getOutput._1) )
+    val getOutput = NerEvaluator.evaluateNER(ResourceHelper.spark, ground_truth, predictions)
+    val expectedMap = Map("total precision"->18.88889, "total recall" ->19.101124, "total f1" ->18.994415)
+    for ((k,v) <- getOutput._1) assert(expectedMap(k).toFloat == v.toFloat)
   }
 
-  "NerEvaluator.evaluateNer" should "also work for dataframe and token_level" in {
-    val getOutput = NerEvaluator.evaluateNer(ResourceHelper.spark, ground_truth, predictions, mode="token_level", outputDf = true)
+  "NerEvaluator.evaluateNer" should "also work for token_level" in {
+    val getOutput = NerEvaluator.evaluateNER(ResourceHelper.spark, ground_truth, predictions, mode="token_level")
     val expectedRow = Row("B-Location", 30.769232.toFloat, 26.666668.toFloat, 28.57143.toFloat, 15)
-    val outputRow = getOutput._3.getOrElse(0).asInstanceOf[DataFrame].first()
-    assert(outputRow.equals(expectedRow))
+    val outRow = getOutput._2.first()
+    assert(outRow.equals(expectedRow))
   }
 
 }

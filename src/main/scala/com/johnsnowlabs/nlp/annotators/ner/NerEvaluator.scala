@@ -1,23 +1,14 @@
 package com.johnsnowlabs.nlp.annotators.ner
-import java.util
-
 import com.johnsnowlabs.nlp.util.io.ResourceHelper
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 object NerEvaluator {
-  //TODO:
-  //TODO: py4j
-  //TODO: extend internal eval module
 
-
-
-  def evaluateNer(spark: SparkSession = ResourceHelper.spark, ground_truth: Seq[String], predictions: Seq[String], percent:Boolean=true, outputDf:Boolean=false, mode: String = "entity_level"):
-  (Map[String, (Any, Any, Float)], Map[String, (Float, Float, Float, Int)], Option[DataFrame])={
+  def evaluateNER(spark: SparkSession = ResourceHelper.spark, ground_truth: Seq[String], predictions: Seq[String], percent:Boolean=true, mode: String = "entity_level"):  (Map[String, Float], DataFrame) ={
     //get seq of ground truth, seq of prediction
-    //creates Map with avg precision, recall, f1
-    //creates df with entity, precision, recall, f1, support
-    //returns a tuple of (map, df)
+    //returns Map with avg precision, recall, f1
+    //returns df with entity, precision, recall, f1, support
     //if mode==entity_level, remove O and I- and B- tags
 
     val entitiesNeedMetrics = if (mode == "entity_level") ground_truth.map(ent => ent.split("-").last) else ground_truth
@@ -26,7 +17,6 @@ object NerEvaluator {
     var tpTotal = 0
     var fpTotal = 0
     var fnTotal = 0
-    var supportTotal = 0
     val distinctEntities = if (mode == "entity_level") (entitiesNeedMetrics ++ predictionsCleaned).distinct.filterNot(ent => ent == "O") else (entitiesNeedMetrics ++ predictionsCleaned).distinct
     val entityMetrics = distinctEntities.map(ent => {
       val tp = pairsCleaned.filter(pair => pair == (ent, ent)).length
@@ -47,52 +37,25 @@ object NerEvaluator {
       tpTotal += tp
       fpTotal += fp
       fnTotal += fn
-      supportTotal += support
 
-      (ent, precision, recall, f1, support)
+      Row(ent, precision, recall, f1, support)
     })
+    val schema = List(StructField("entity", StringType), StructField("precision", FloatType), StructField("recall", FloatType), StructField("f1", FloatType), StructField("support", IntegerType))
 
-    val macroVals = entityMetrics.foldLeft((0.toFloat, 0.toFloat, 0.toFloat))( (a, b)=>
-      (a._1 + b._2/entityMetrics.length, a._2 + b._3/entityMetrics.length, a._3 + b._3/entityMetrics.length) )
-
-    val weightedVals = entityMetrics.foldLeft((0.toFloat, 0.toFloat, 0.toFloat)) ((a, b)=>{
-      val weight = b._5.toFloat / supportTotal
-      (a._1 + b._2*weight, a._2 + b._3*weight, a._3 + b._4*weight)})
-
-    val accuracy = if (percent) 100*tpTotal.toFloat/supportTotal else tpTotal.toFloat/supportTotal
-
-    var microPrecision = if (tpTotal + fpTotal > 0) tpTotal.toFloat/(tpTotal+fpTotal) else 0.toFloat
-    var microRecall = if (tpTotal + fnTotal > 0 ) tpTotal.toFloat/(tpTotal+fnTotal) else 0.toFloat
-    var microF1 = if (microPrecision + microRecall > 0) 2 * microPrecision * microRecall / (microPrecision + microRecall) else 0.toFloat
+    var totalPrecision = if (tpTotal + fpTotal > 0) tpTotal.toFloat/(tpTotal+fpTotal) else 0.toFloat
+    var totalRecall = if (tpTotal + fnTotal > 0 ) tpTotal.toFloat/(tpTotal+fnTotal) else 0.toFloat
+    var totalF1 = if (totalPrecision + totalRecall > 0) 2 * totalPrecision * totalRecall / (totalPrecision + totalRecall) else 0.toFloat
     if (percent == true) {
-      microPrecision *= 100
-      microRecall *= 100
-      microF1 *= 100
+      totalPrecision *= 100
+      totalRecall *= 100
+      totalF1 *= 100
     }
 
-    val averagesMap = Map("accuracy" -> (None, None, accuracy),
-      "micro" -> (microPrecision, microRecall, microF1),
-      "macro" -> macroVals,
-      "weighted" -> weightedVals)
 
-    val entitiesMap = entityMetrics.map(tup => (tup._1 -> (tup._2, tup._3, tup._4, tup._5))).
-      foldLeft(Map.empty[String, (Float, Float, Float, Int)]) { case (m, (k, v)) => m.updated(k, v) }
 
-    val entityMetricsDf = if (!outputDf) None else {
-      val schema = List(StructField("entity", StringType), StructField("precision", FloatType), StructField("recall", FloatType), StructField("f1", FloatType), StructField("support", IntegerType))
-      val entityMetricsRows=entityMetrics.map(tup => Row(tup._1, tup._2, tup._3, tup._4, tup._5))
-      Some(spark.createDataFrame(spark.sparkContext.parallelize(entityMetricsRows), StructType(schema)))
-    }
-
-    (averagesMap, entitiesMap, entityMetricsDf)
-  }
-
-  def evaluateNer(spark: org.apache.spark.sql.SparkSession, ground_truth: util.ArrayList[java.lang.String], predictions: util.ArrayList[java.lang.String], percent: java.lang.Boolean, outputDf: java.lang.Boolean, mode: java.lang.String):
-  //(Map[String, (Any, Any, Float)], Map[String, (Float, Float, Float, Int)], Option[DataFrame])= {
-  String={
-    //val a = evaluateNer(spark, ground_truth.toArray.toSeq.asInstanceOf[Seq[String]], predictions.toArray.toSeq.asInstanceOf[Seq[String]], percent, outputDf, mode)
-
-    "apples"
+    val entityTotalMap = Map("total precision"->totalPrecision, "total recall"->totalRecall, "total f1"->totalF1)
+    val entityLvlDf = spark.createDataFrame(spark.sparkContext.parallelize(entityMetrics), StructType(schema))
+    (entityTotalMap, entityLvlDf)
   }
 
 

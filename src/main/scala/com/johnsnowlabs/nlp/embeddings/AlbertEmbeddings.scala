@@ -18,13 +18,13 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
   *
   * '''TF-hub Models :'''
   *
-  * albert_base     = [[https://tfhub.dev/google/albert_base/3]]    |  768-embed-dim,   12-layer,  12-heads, 12M parameters
+  * albert_base_uncased     = [[https://tfhub.dev/google/albert_base/3]]    |  768-embed-dim,   12-layer,  12-heads, 12M parameters
   *
-  * albert_large    = [[https://tfhub.dev/google/albert_large/3]]   |  1024-embed-dim,  24-layer,  16-heads, 18M parameters
+  * albert_large_uncased    = [[https://tfhub.dev/google/albert_large/3]]   |  1024-embed-dim,  24-layer,  16-heads, 18M parameters
   *
-  * albert_xlarge   = [[https://tfhub.dev/google/albert_xlarge/3]]  |  2048-embed-dim,  24-layer,  32-heads, 60M parameters
+  * albert_xlarge_uncased   = [[https://tfhub.dev/google/albert_xlarge/3]]  |  2048-embed-dim,  24-layer,  32-heads, 60M parameters
   *
-  * albert_xxlarge  = [[https://tfhub.dev/google/albert_xxlarge/3]] |  4096-embed-dim,  12-layer,  64-heads, 235M parameters
+  * albert_xxlarge_uncased  = [[https://tfhub.dev/google/albert_xxlarge/3]] |  4096-embed-dim,  12-layer,  64-heads, 235M parameters
   *
   * This model requires input tokenization with SentencePiece model, which is provided by Spark-NLP (See tokenizers package)
   *

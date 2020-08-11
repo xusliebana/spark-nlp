@@ -4,7 +4,7 @@ from pyspark.sql.types import *
 class Annotation:
 
     def __init__(self, annotator_type, begin, end, result, metadata, embeddings):
-        self.annotator_type = annotator_type
+        self.annotatorType = annotator_type
         self.begin = begin
         self.end = end
         self.result = result
@@ -13,7 +13,7 @@ class Annotation:
 
     def __str__(self):
         return "Annotation(%s, %i, %i, %s, %s)" % (
-            self.annotator_type,
+            self.annotatorType,
             self.begin,
             self.end,
             self.result,
@@ -26,7 +26,7 @@ class Annotation:
     @staticmethod
     def dataType():
         return StructType([
-            StructField('annotator_type', StringType(), False),
+            StructField('annotatorType', StringType(), False),
             StructField('begin', IntegerType(), False),
             StructField('end', IntegerType(), False),
             StructField('result', StringType(), False),

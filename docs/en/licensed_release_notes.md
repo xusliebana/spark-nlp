@@ -81,14 +81,14 @@ In addition to ChunkEntityResolvers, we now release our first BioBert-based enti
 annotator. It’s
 fully trainable and comes with several pretrained entity resolvers for the following medical terminologies:
 
-CPT: biobertresolve_cpt
-ICDO: biobertresolve_icdo
-ICD10CM: biobertresolve_icd10cm
-ICD10PCS: biobertresolve_icd10pcs
-LOINC: biobertresolve_loinc
-SNOMED_CT (findings): biobertresolve_snomed_findings
-SNOMED_INT (clinical_findings): biobertresolve_snomed_findings_int
-RXNORM (branded and clinical drugs): biobertresolve_rxnorm_bdcd
+CPT: biobertresolve_cpt  
+ICDO: biobertresolve_icdo  
+ICD10CM: biobertresolve_icd10cm  
+ICD10PCS: biobertresolve_icd10pcs  
+LOINC: biobertresolve_loinc  
+SNOMED_CT (findings): biobertresolve_snomed_findings  
+SNOMED_INT (clinical_findings): biobertresolve_snomed_findings_int  
+RXNORM (branded and clinical drugs): biobertresolve_rxnorm_bdcd  
 
 Example: 
 ```python
@@ -126,31 +126,28 @@ against by `sparknlp_jsl.start(secret, public="x.x.x")` for extreme cases.
 
 We are releasing 3 new biomedical NER models trained with clinical embeddings (all one single entity models)
 
-ner_bacterial_species (comprising
-of Linneaus and Species800 datasets)
-ner_chemicals (general purpose and
-bio chemicals, comprising of BC4Chem and BN5CDR-Chem)
-ner_diseases_large (comprising
-of ner_disease, NCBI_Disease and BN5CDR-Disease)
+ner_bacterial_species (comprising of Linneaus and Species800 datasets)  
+ner_chemicals (general purpose and bio chemicals, comprising of BC4Chem and BN5CDR-Chem)  
+ner_diseases_large (comprising of ner_disease, NCBI_Disease and BN5CDR-Disease)  
 
-We are also releasing the biobert versions of the several clinical NER models stated below:
-ner_clinical_biobert
-ner_anatomy_biobert
-ner_bionlp_biobert
-ner_cellular_biobert
-ner_deid_biobert
-ner_diseases_biobert
-ner_events_biobert
-ner_jsl_biobert
-ner_chemprot_biobert
-ner_human_phenotype_gene_biobert
-ner_human_phenotype_go_biobert
-ner_posology_biobert
-ner_risk_factors_biobert
+We are also releasing the biobert versions of the several clinical NER models stated below:  
+
+`ner_clinical_biobert`  
+`ner_anatomy_biobert`  
+`ner_bionlp_biobert`  
+`ner_cellular_biobert`  
+`ner_deid_biobert`  
+`ner_diseases_biobert`  
+`ner_events_biobert`  
+`ner_jsl_biobert`  
+`ner_chemprot_biobert`  
+`ner_human_phenotype_gene_biobert`  
+`ner_human_phenotype_go_biobert`  
+`ner_posology_biobert`  
+`ner_risk_factors_biobert`  
 
 
-Metrics (micro averages excluding
-O’s):
+Metrics (micro averages excluding O’s):
 
 |    | model_name                        |   clinical_glove_micro |   biobert_micro |
 |---:|:----------------------------------|-----------------------:|----------------:|
@@ -174,11 +171,8 @@ O’s):
 
 In addition to these, we release two new German NER models:
 
-ner_healthcare_slim 
- ('TIME_INFORMATION', 'MEDICAL_CONDITION',  'BODY_PART',  'TREATMENT', 
-'PERSON', 'BODY_PART')
-ner_traffic
- (extract entities regarding traffic accidents e.g. date, trigger, location etc.)
+ner_healthcare_slim ('TIME_INFORMATION', 'MEDICAL_CONDITION',  'BODY_PART',  'TREATMENT', 'PERSON', 'BODY_PART')  
+ner_traffic (extract entities regarding traffic accidents e.g. date, trigger, location etc.)
 
 #### 6. PICO Classifier
 
@@ -220,11 +214,18 @@ More information and examples [here](https://colab.research.google.com/github/Jo
 
 We are also releasing our first clinical pretrained classifier for ADE classification tasks. This new ADE classifier is trained on various ADE datasets, including the mentions in tweets to represent the daily life conversations as well. So it works well on the texts coming from academic context, social media and clinical notes. It’s trained with `Clinical Biobert` embeddings, which is the most powerful contextual language model in the clinical domain out there.
 
+We are also adding slim versions of several clinical NER models that are trained with 100d healthcare word embeddings, which is lighter and smaller in size.
+
+`ner_healthcare`  
+`assertion_dl_healthcare`  
+`ner_posology_healthcare`  
+`ner_events_healthcare`  
+
 ##### Classifiers
 ADE classifier will have two versions in the library, trained with different Bert embeddings:
 
-`classifierdl_ade_bioert` (768d BioBert embeddings)  
-`classifierdl_adee_clinicalbert` (768d ClinicalBert embeddings)  
+`classifierdl_ade_bioert` (768d BioBert embeddings)    
+`classifierdl_adee_clinicalbert` (768d ClinicalBert embeddings)    
 
 More information and examples [here](https://colab.research.google.com/github/JohnSnowLabs/spark-nlp-workshop/blob/master/tutorials/Certification_Trainings/Healthcare/16.Adverse_Drug_Event_ADE_NER_and_Classifier.ipynb)
 
@@ -243,13 +244,6 @@ More information and examples [here](https://colab.research.google.com/github/Jo
 ##### Entity Resolver
 We are releasing the first Entity Resolver for `Athena` (Automated Terminology Harmonization, Extraction and Normalization for Analytics, http://athena.ohdsi.org/) to extract concept ids via standardized medical vocabularies. For now, it only supports `conditions` section and can be used to map the clinical conditions with the corresponding standard terminology and then get the concept ids to store them in various database schemas.
 It is named as `chunkresolve_athena_conditions_healthcare`.
-
-We added slim versions of several clinical NER models that are trained with 100d healthcare word embeddings, which is lighter and smaller in size.
-
-`ner_healthcare`
-`assertion_dl_healthcare`
-`ner_posology_healthcare`
-`ner_events_healthcare`
 
 ##### Graph Builder
 Spark NLP Licensed version has several DL based annotators (modules) such as NerDL, AssertionDL, RelationExtraction and GenericClassifier, and they are all based on Tensorflow (tf) with custom graphs. In order to make the creating and customizing the tf graphs for these models easier for our licensed users, we added a graph builder to the Python side of the library. Now you can customize your graphs and use them in the respected models while training a new DL model.

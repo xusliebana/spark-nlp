@@ -24,6 +24,9 @@ package object annotator {
   type TokenizerModel = com.johnsnowlabs.nlp.annotators.TokenizerModel
   object TokenizerModel extends ReadablePretrainedTokenizer
 
+  type HtmlParser = com.johnsnowlabs.nlp.annotators.html.HtmlParser
+  object HtmlParser extends ReadablePretrainedPerceptron
+
   type RegexTokenizer = com.johnsnowlabs.nlp.annotators.RegexTokenizer
   object RegexTokenizer extends DefaultParamsReadable[RegexTokenizer]
 

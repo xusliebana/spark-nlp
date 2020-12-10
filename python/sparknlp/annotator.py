@@ -38,6 +38,7 @@ ld.dl = sys.modules[__name__]
 keyword = sys.modules[__name__]
 keyword.yake = sys.modules[__name__]
 sentence_detector_dl = sys.modules[__name__]
+html = sys.modules[__name__]
 
 class RecursiveTokenizer(AnnotatorApproach):
     name = 'RecursiveTokenizer'
@@ -870,6 +871,32 @@ class PerceptronModel(AnnotatorModel):
     def pretrained(name="pos_anc", lang="en", remote_loc=None):
         from sparknlp.pretrained import ResourceDownloader
         return ResourceDownloader.downloadModel(PerceptronModel, name, lang, remote_loc)
+
+class HtmlParser(AnnotatorModel):
+    name = 'HtmlParser'
+
+    tag = Param(Params._dummy(),
+                   "tag",
+                   "The tag that we going to find the htlml content",
+                   typeConverter=TypeConverters.toString)
+    selector =  Param(Params._dummy(),
+                   "selector",
+                   "What Kind of selector we going to take possibles values all or content",
+                   typeConverter=TypeConverters.toString)
+
+    @keyword_only
+    def __init__(self):
+        super(HtmlParser, self).__init__(
+            classname="com.johnsnowlabs.nlp.annotators.html.HtmlParser")
+        self._setDefault(
+            selector='content'
+        )
+    
+    def setTag(self,value):
+        return self._set(tag=value)
+    
+    def setSelector(self, value):
+        return self._set(selector=value)
 
 
 class SentenceDetectorParams:
